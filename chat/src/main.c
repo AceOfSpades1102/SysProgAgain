@@ -8,7 +8,7 @@
 int main(int argc, char **argv)
 {
 	utilInit(argv[0]);
-	infoPrint("Chat server, group (  -_・)?");	//TODO: 
+	infoPrint("Chat server, group (  -_・)?");	//TODO: group number
 
 	//TODONE: evaluate command line arguments
 
