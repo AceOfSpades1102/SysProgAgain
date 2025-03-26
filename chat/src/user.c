@@ -14,6 +14,9 @@ static pthread_mutex_t userLock = PTHREAD_MUTEX_INITIALIZER;
 User *userFront = NULL;
 static User *userBack = NULL;
 
+//errors
+const char *allocError =("Something went wrong with allocating Memory (・_・)?");
+
 //TODO: Implement the functions declared in user.h
 
 User* createUser(User **head, const char *name, int sock, pthread_t thread)
@@ -26,9 +29,9 @@ User* createUser(User **head, const char *name, int sock, pthread_t thread)
         return NULL;
     }
 
-    strncpy(newUser->name, name, MAX_NAME_LEN);
+    strncpy(newUser->name, name, NAME_MAX);
 
-    newUser->name[MAX_NAME_LEN] = '\0';
+    newUser->name[NAME_MAX] = '\0';
     newUser->sock = sock;
     newUser->thread = thread;
     newUser->prev = NULL;
@@ -37,10 +40,10 @@ User* createUser(User **head, const char *name, int sock, pthread_t thread)
 
     if(userFront != NULL)
     {
-        (*userFront)->prev = newUser;
+        (userFront)->prev = newUser;
     }
         
-    *userFront = newUser;
+    userFront = newUser;
 
     //printf("userFront is now: %p\n", (void *)userFront);
     

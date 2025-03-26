@@ -2,6 +2,7 @@
 #define USER_H
 
 #include <pthread.h>
+#include "def.h"
 
 typedef struct User
 {
@@ -9,12 +10,12 @@ typedef struct User
 	struct User *next;
 	pthread_t thread;	//thread ID of the client thread
 	int sock;		//socket for client
-	char name[MAX_NAME_LEN +1 ];
+	char name[NAME_MAX +1 ];
 } User;
 
 
 void removeUser(pthread_t thread_id);
-User* createUser(int sock, pthread_t thread);
+User* createUser(User **head, const char *name, int sock, pthread_t thread);
 void forEachUser(void (*callback)(User *));
 void userRemoveAll(void);
 void printUser(User *user);

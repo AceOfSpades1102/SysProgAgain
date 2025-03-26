@@ -1,24 +1,17 @@
 #ifndef DEF_H
 #define DEF_H
 
+#include "util.h"
+#include <string.h>
+#include <time.h>
+#include <netinet/in.h>
+
 
 //chars
 
-//errors
-const char *allocError("Something went wrong with allocating Memory (・_・)?");
 
-//Message to user
-const char *serverName = "ChatServer";
-const char *pauseMsg = "Broadcast paused (　ﾟﾛﾟ)!!";
-const char *resumeMsg = "Broadcast resumed (ﾉ>ω<)ﾉ :｡･:*:･ﾟ’★,｡･:*:･ﾟ’☆";
-const char *invalidCmdMsg = "Invalid command (´･ｪ･｀)";
-const char *alreadyPausedMsg = "Broadcast already paused ( ´∀｀ )b";
-const char *alreadyRunningMsg = "Broadcast already running ( ´∀｀ )b";
-const char *noPermissionMsg = "You do not have permission to perform this action ( ・－・)";
-const char *emptyString = "";
-const char *userNotFoundMsg = "User not found (  -_・)?";
-const char *noKickingAdminMsg = "You cannot kick an admin ！Σ(x_x;)!";
-const char *fullQueueMsg = "Message queue is full (´･ｪ･｀)";
+
+
 
 
 //return and write stuff >v<

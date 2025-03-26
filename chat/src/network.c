@@ -1,4 +1,8 @@
 #include <errno.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdio.h>
+#include <arpa/inet.h> // For htons, htonl, ntohs, ntohl
 #include "network.h"
 #include "util.h"
 #include "def.h"

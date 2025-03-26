@@ -4,6 +4,7 @@
 #include <string.h>
 #include "connectionhandler.h"
 #include "util.h"
+#include "broadcastagent.h"
 
 int main(int argc, char **argv)
 {
