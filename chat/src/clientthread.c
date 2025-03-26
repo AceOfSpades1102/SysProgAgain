@@ -35,8 +35,6 @@ const char *fullQueueMsg = "Message queue is full (´･ｪ･｀)";
 
 
 
-
-
 void *clientthread(void *arg)
 {
 	User *self = (User *)arg;

@@ -15,8 +15,8 @@ typedef struct User
 
 
 void removeUser(pthread_t thread_id);
-User* createUser(User **head, const char *name, int sock, pthread_t thread);
-void forEachUser(void (*callback)(User *));
+User* createUser(int sock, pthread_t thread,const char *name);
+void forEachUser(void (*callback)(User *, void *), void *context);
 void userRemoveAll(void);
 void printUser(User *user);
 

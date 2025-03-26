@@ -5,6 +5,8 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
 #include "user.h"
 #include "clientthread.h"
 #include "util.h"
@@ -19,7 +21,7 @@ const char *allocError =("Something went wrong with allocating Memory (・_・)?
 
 //TODO: Implement the functions declared in user.h
 
-User* createUser(User **head, const char *name, int sock, pthread_t thread)
+User* createUser(int sock, pthread_t thread,const char *name)
 {
     pthread_mutex_lock(&userLock);
     User *newUser = (User *)malloc(sizeof(User));
@@ -35,17 +37,19 @@ User* createUser(User **head, const char *name, int sock, pthread_t thread)
     newUser->sock = sock;
     newUser->thread = thread;
     newUser->prev = NULL;
-    newUser->next = *head;
+    newUser->next = NULL;
 
 
-    if(userFront != NULL)
-    {
-        (userFront)->prev = newUser;
+    if (!userFront) {
+        userFront = newUser;
+        userBack = newUser;
+    } else {
+        userBack->next = newUser;
+        newUser->prev = userBack;
+        userBack = newUser;
     }
-        
-    userFront = newUser;
 
-    //printf("userFront is now: %p\n", (void *)userFront);
+    debugPrint("userFront is now: %p\n", (void *)userFront);
     
     pthread_mutex_unlock(&userLock);
     //printUser(newUser);
@@ -73,14 +77,19 @@ void removeUser(pthread_t thread_id)
 
             if (current->next) {
                 current->next->prev = current->prev;
+            } else {
+                userBack = current->prev;
             }
 
+
+            //close sock
+            close(current->sock);
             // Free the memory of the removed user
             free(current);
 
             // Unlock the list mutex and return
             pthread_mutex_unlock(&userLock);
-            return;
+            return; // TODO : Success
         }
         current = current->next;
     }
@@ -88,11 +97,11 @@ void removeUser(pthread_t thread_id)
     //printf("userFront is now: %p\n", (void *)userFront);
 
     pthread_mutex_unlock(&userLock);
-    return;
+    return; //TODO Failure
 }
 
 
-void forEachUser(void (*callback)(User *))
+void forEachUser(void (*callback)(User *, void *), void *context)
 {
     pthread_mutex_lock(&userLock);
 
@@ -100,7 +109,7 @@ void forEachUser(void (*callback)(User *))
     while(current)
     {
         //printUser(current);
-        callback(current);
+        callback(current, context);
         current = current->next;
     }
 
