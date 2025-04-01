@@ -16,7 +16,7 @@
 static int createPassiveSocket(in_port_t port)
 {
 	int fd = -1;
-	//TODO: socket()
+	//TODONE: socket()
 	fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) 
 	{
@@ -30,7 +30,7 @@ static int createPassiveSocket(in_port_t port)
 	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-	//TODO: bind() to port
+	//TODONE: bind() to port
 	if (bind(fd, (const struct sockaddr *)&addr, sizeof(struct sockaddr_in)) < 0)
 	{
 		errnoPrint("failed to bind socket");
@@ -38,7 +38,7 @@ static int createPassiveSocket(in_port_t port)
 		return -1;
 	}
 
-	//TODO: listen()
+	//TODONE: listen()
 	if (listen(fd, 7) == -1) 
 	{
         errnoPrint("failed to listen");
@@ -58,11 +58,47 @@ int connectionHandler(in_port_t port)
 		return -1;
 	}
 
+	infoPrint("Server running on port %d...\n", port);
+
 	for(;;)
 	{
-		//TODO: accept() incoming connection
-		//TODO: add connection to user list and start client thread
+		struct sockaddr_in client_addr;
+        socklen_t client_len = sizeof(client_addr);
+
+		//TODONE: accept() incoming connection
+		int *client_sock = malloc(sizeof(int));
+        if (!client_sock) {
+            errnoPrint("Failed to allocate memory for client socket");
+            continue;
+        }
+
+		debugPrint("Listening socket descriptor: %d", fd);
+
+		*client_sock = accept(fd, (struct sockaddr *)&client_addr, &client_len);
+
+		if (client_sock == -1)
+        {
+            errnoPrint("couldn't accept incoming connection Σ(x_x;)!");
+            free(client_sock);
+            continue;
+        }
+
+		infoPrint("New connection from fd:%ls \n", client_sock);
+
+		//TODONE: add connection to user list and start client thread
+		pthread_t tid;
+
+		//TODO: create User in clientthread
+		if (pthread_create(&tid, NULL, clientthread, client_sock) != 0) {
+            errnoPrint("Failed to create client thread");
+            close(*client_sock);
+            free(client_sock);
+            continue;
+        }
+
+		pthread_detach(tid);
 	}
 
+	close(fd);
 	return 0;	//never reached
 }
