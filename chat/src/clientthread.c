@@ -13,6 +13,7 @@
 #include "user.h"
 #include "util.h"
 #include "network.h"
+#include "def.h"
 
 #include <time.h>
 #include <netinet/in.h>
@@ -37,15 +38,25 @@ const char *fullQueueMsg = "Message queue is full (´･ｪ･｀)";
 
 void *clientthread(void *arg)
 {
-	User *self = (User *)arg;
+	int client_socket = *(int *)arg;
 	free(arg);
 
-	int client_fd = self->sock;        
-    pthread_t client_thread = self->thread;   
-    
+	debugPrint("Client thread started (ﾉ>ω<)ﾉ");
+
+	//TODO: everything here lolz
+
 	Message buffer;
     memset(&buffer, 0, sizeof(Message));
 
+	if (networkReceive(client_socket, &buffer) == 0)
+	{
+		if (buffer.header.type == LRQ)
+		{
+			//handle login request
+			//create user (in lrq?)
+		}
+	}
+    
 	debugPrint("Client thread started.");
 
 	//TODO: Receive messages and send them to all users, skip self

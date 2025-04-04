@@ -34,7 +34,6 @@ enum {
 	UAD = 4,
 	URM = 5,
 
-
 	//Login Responses
 	LRE_SUCCESS = 0,
 	LRE_NAME_TAKEN = 1,
@@ -43,6 +42,7 @@ enum {
 	LRE_UNKNOWN_ERROR = 255,
 
 	VALID_TYPE = 1,
+	INVALID_TYPE = 0,
 
 	// User removed
 	CONN_CLOSED_CLIENT = 0,

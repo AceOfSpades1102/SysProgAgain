@@ -11,6 +11,9 @@ int main(int argc, char **argv)
 	utilInit(argv[0]);
 	infoPrint("Chat server, group 23");	//TODONE: group number is 23
 
+	debugEnable();
+	infoPrint("Debug mode enabled!");
+
 	//TODONE: evaluate command line arguments
 
 	int c = 0;
@@ -49,8 +52,16 @@ int main(int argc, char **argv)
 			}
 			case 'd':
 			{
-				debugEnable();
-				infoPrint("Debug mode enabled!");
+				if (debugEnabled() == 0)
+				{
+					debugEnable();
+					infoPrint("Debug mode enabled!");
+				}
+				else
+				{
+					debugDisable();
+					infoPrint("Debug mode enabled!");
+				}
 				break;
 			}
 			case 'h':
