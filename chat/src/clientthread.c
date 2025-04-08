@@ -62,7 +62,7 @@ void *clientthread(void *arg)
 	//TODO: Receive messages and send them to all users, skip self
 	//TODO: literally everything
 
-	close(client_thread);
+	//close(clientthread);//maybe different var
 	debugPrint("Client thread stopping.");
 	return NULL;
 }

@@ -49,15 +49,17 @@ int recieveLen(int fd, Message *buffer)
         return EXIT_FAILURE;
     }
 
-    // Convert length byte order
+    //convert length byte order
     buffer->header.length = ntohs(net_length);
     debugPrint("networkReceive: Received length: %u", buffer->header.length);
 
-    // Validate length
+    //validate length
     if (buffer->header.length + 3 < 4 || buffer->header.length + 3 > MSG_MAX) {
         debugPrint("networkReceive: Invalid message length: %u (%u with type and length)", buffer->header.length, buffer->header.length + 3);
         return EXIT_FAILURE;
     }
+
+    return EXIT_SUCCESS;
 }
 
 int recieveHeader(int fd, Message *buffer)
@@ -68,59 +70,48 @@ int recieveHeader(int fd, Message *buffer)
     return type;
 }
 
+int recieveMessage(int fd, Message *buffer)
+{
+    ssize_t body_length = buffer->header.length;
+    ssize_t received = recv(fd, &buffer->body, body_length, MSG_WAITALL);
+    if (received != body_length) {
+        debugPrint("networkReceive: Failed to receive full message. Received: %zd", received);
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+
+}
+
 int networkReceive(int fd, Message *buffer)
 {
     
     debugPrint("networkRecieve reached");
     //TODO: Recieve type
-    if (recieveType() == INVALID_TYPE)
+    if (recieveType(fd, buffer) == INVALID_TYPE||EXIT_FAILURE)
     {
-
+        return EXIT_FAILURE;
     }
-    recieveHeader(fd, buffer);
-	//TODO: Receive length
-	//TODO: Convert length byte order
-	//TODO: Validate length
+
+    //TODO: Receive length and like do shit yk
+    if (recieveLen(fd, buffer) == INVALID_TYPE||EXIT_FAILURE)
+    {
+        return EXIT_FAILURE;
+    }
+	
+
 	//TODO: Receive text
-
-	//TODO: ^that but header and message separately
-
-	// Step 1: Receive the header
-
-	//maybe separate type and length but not desperately
-	//like it works like this
-
-    messageHeader header;
-    ssize_t header_size = recv(fd, &header, sizeof(header), MSG_WAITALL);
-
-    if (header_size != sizeof(header)) {
-        perror("Failed to receive header");
-        return NULL;
+    if (recieveMessage(fd, buffer) == INVALID_TYPE||EXIT_FAILURE)
+    {
+        return EXIT_FAILURE;
     }
-
-    // Debug: Print raw header bytes
-    debugPrint("Raw Header Bytes: ");
-    unsigned char *header_bytes = (unsigned char *)&header;
-    for (int i = 0; i < sizeof(header); i++) {
-        debugPrint("%02x ", header_bytes[i]);
-    }
-
-    // Step 2: Parse the header
-    header.length = ntohs(header.length); // Convert length from network byte order
-
-    // Debug: Print parsed header fields
-    printf("Parsed Header:\n");
-    printf("  Type: %d\n", header.type);
-    printf("  Length (payload): %d bytes\n", header.length);
-
-    //check if header between 5 and 37
 
 
 
 	
 
-	errno = ENOSYS;
-	return -1;
+	
+	return EXIT_SUCCESS;
 }
 
 int networkSend(int fd, const Message *buffer)
