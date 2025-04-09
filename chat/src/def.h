@@ -22,6 +22,7 @@ enum {
 	TYPE_MAX = 5,
 	LRG_LEN_MIN = 6,
 	LRG_LEN_MAX = 36,
+	LRQ_VERSION = 0,
 	
 	MAGIC_LRQ = 0x0badf00d,
 	MAGIC_LRE = 0xc001c001,

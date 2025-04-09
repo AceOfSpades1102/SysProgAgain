@@ -33,7 +33,45 @@ const char *userNotFoundMsg = "User not found (  -_・)?";
 const char *noKickingAdminMsg = "You cannot kick an admin ！Σ(x_x;)!";
 const char *fullQueueMsg = "Message queue is full (´･ｪ･｀)";
 
+int handleLRQ(Message *buffer, int client_socket)
+{
+	debugPrint("handling LRQ");
 
+	// Validate length
+    if (buffer->header.length < 6 || buffer->header.length > 36) 
+	{
+        errnoPrint("Invalid message length received (  -_・)? %u", buffer->header.length);
+        if (sendLoginResponse(client_socket, LRE_UNKNOWN_ERROR, "09Server")) 
+		{
+            errorPrint("Failed to send LoginResponse to client %d with code %d", client_socket, LRE_UNKNOWN_ERROR);
+        }
+        close(client_socket);
+        return EXIT_FAILURE;
+    }
+
+	// Validate magic number
+    if (ntohl(buffer->body.login_request.magic) != MAGIC_LRQ) 
+	{
+        debugPrint("Invalid magic number in LoginRequest");
+        if (sendLoginResponse(client_socket, LRE_UNKNOWN_ERROR, "09Server")) 
+		{
+            errorPrint("Failed to send LoginResponse to client %d with code %d", client_socket, LRE_UNKNOWN_ERROR);
+        }
+        close(client_socket);
+        return EXIT_FAILURE;
+    }
+
+	// Validate version
+    if (buffer->body.login_request.version != LRQ_VERSION) {
+        debugPrint("Invalid version in LoginRequest");
+        if (sendLoginResponse(client_socket, LRE_WRONG_VERSION, "09Server")) {
+            errorPrint("Failed to send LoginResponse to client %d with code %d", client_socket, LRE_WRONG_VERSION);
+        }
+        close(client_socket);
+        return EXIT_FAILURE;
+    }
+
+}
 
 
 void *clientthread(void *arg)
@@ -48,11 +86,17 @@ void *clientthread(void *arg)
 	Message buffer;
     memset(&buffer, 0, sizeof(Message));
 
+	//recieve shit
 	if (networkReceive(client_socket, &buffer) == 0)
 	{
 		if (buffer.header.type == LRQ)
 		{
 			//handle login request
+			if (handleLRQ(&buffer, client_socket) == 0)
+			{
+				debugPrint("Login successful");
+
+			}
 			//create user (in lrq?)
 		}
 	}
@@ -62,7 +106,7 @@ void *clientthread(void *arg)
 	//TODO: Receive messages and send them to all users, skip self
 	//TODO: literally everything
 
-	//close(clientthread);//maybe different var
+	close(clientthread);//maybe different var
 	debugPrint("Client thread stopping.");
 	return NULL;
 }

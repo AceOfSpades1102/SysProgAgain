@@ -105,11 +105,6 @@ int networkReceive(int fd, Message *buffer)
     {
         return EXIT_FAILURE;
     }
-
-
-
-	
-
 	
 	return EXIT_SUCCESS;
 }
