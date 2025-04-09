@@ -33,7 +33,7 @@ const char *userNotFoundMsg = "User not found (  -_・)?";
 const char *noKickingAdminMsg = "You cannot kick an admin ！Σ(x_x;)!";
 const char *fullQueueMsg = "Message queue is full (´･ｪ･｀)";
 
-int handleLRQ(Message *buffer, int client_socket)
+/*int handleLRQ(Message *buffer, int client_socket)
 {
 	debugPrint("handling LRQ");
 
@@ -62,14 +62,33 @@ int handleLRQ(Message *buffer, int client_socket)
     }
 
 	// Validate version
-    if (buffer->body.login_request.version != LRQ_VERSION) {
+    if (buffer->body.login_request.version != LRQ_VERSION) 
+	{
         debugPrint("Invalid version in LoginRequest");
-        if (sendLoginResponse(client_socket, LRE_WRONG_VERSION, "09Server")) {
+        if (sendLoginResponse(client_socket, LRE_WRONG_VERSION, "09Server")) 
+		{
             errorPrint("Failed to send LoginResponse to client %d with code %d", client_socket, LRE_WRONG_VERSION);
         }
         close(client_socket);
         return EXIT_FAILURE;
     }
+
+	return EXIT_SUCCESS;
+
+}*/
+
+int handleLRQ()
+{
+	//this is for testing purposes only
+	return 1;
+}
+
+int sendLRE()
+{
+	//send stuff
+	//if sending stuff didn't work return fail
+	//else return success
+	return 1;
 
 }
 

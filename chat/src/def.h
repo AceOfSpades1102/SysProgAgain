@@ -12,6 +12,15 @@
 
 
 
+#define VALID_LEN 0
+#define INVALID_LEN -1
+
+#define CONN_CLOSED -1
+#define FAILED -1
+
+#define RECV_SUCCESS 0
+
+#define SUCCESS 0
 
 
 //return and write stuff >v<
@@ -20,8 +29,8 @@ enum {
 	NAME_MAX = 32,
 	TEXT_MAX = 512,
 	TYPE_MAX = 5,
-	LRG_LEN_MIN = 6,
-	LRG_LEN_MAX = 36,
+	LRQ_LEN_MIN = 6,
+	LRQ_LEN_MAX = 36,
 	LRQ_VERSION = 0,
 	
 	MAGIC_LRQ = 0x0badf00d,

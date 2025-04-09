@@ -9,110 +9,146 @@
 #include "util.h"
 #include "def.h"
 
-int recieveType(int fd, Message *buffer)
-{
-    ssize_t received = recv(fd, &buffer->header.type, sizeof(buffer->header.type), MSG_WAITALL);
-    debugPrint("networkReceive: Raw received type: %zd", received);
-    if (received != sizeof(buffer->header.type)) {
-        debugPrint("networkReceive: Failed to receive message type. Received: %zd", received);
-        return EXIT_FAILURE;
+static ssize_t handleRecvReturn(ssize_t tmp, int fd, ssize_t expected_len){
+    if(tmp == CONN_CLOSED){
+        debugPrint("Socket: %i, performed a shutdown ！Σ(x_x;)!", fd);
+        return CONN_CLOSED;
+    }
+    
+    if(tmp == FAILED){
+        debugPrint("Socket: %i, failed to receive message (´･ｪ･｀)", fd);
+        return FAILED;
     }
 
-    // Validate the message type
-    if (buffer->header.type > TYPE_MAX) {
-        debugPrint("networkReceive: Invalid message type received: %d", buffer->header.type);
+    if(tmp < expected_len) {
+        debugPrint("Socket: %i, received less than expected. (  -_・)?", fd);
+        return FAILED;
+    }
+
+    if(tmp == expected_len){
+        return RECV_SUCCESS;
+    }
+
+    debugPrint("Socket: %i, unexpected Error (._.)", fd);
+    return FAILED;
+}
+
+int recieveHeader(int fd, messageHeader *buffer)
+{
+    ssize_t tmp = recv(fd, &buffer->type, sizeof(buffer->type), MSG_WAITALL);
+    tmp = handleRecvReturn(tmp, fd, sizeof(buffer->type));
+
+    if(tmp != RECV_SUCCESS)
+    {
+        return tmp;
+    }
+
+    tmp = recv(fd, &buffer->length, sizeof(buffer->length), MSG_WAITALL);
+    tmp = handleRecvReturn(tmp, fd, sizeof(buffer->length));
+
+    if(tmp != RECV_SUCCESS)
+    {
+        return tmp;
+    }
+    buffer->length = ntohs(buffer->length);
+
+    //replace that
+    //return checkHeader(buffer, fd);
+    //with this
+
+    if(buffer->type > TYPE_MAX)
+    {
+        debugPrint("That was not a valid type ._.");
         return INVALID_TYPE;
     }
 
-    switch (buffer->header.type)
+    switch(buffer->type)
     {
-    case 0:
-        return LRQ;
-        break;
-    case 2:
-        return C2S;
-        break;
+        case LRQ: 
+        {
+            if(buffer->length < LRQ_LEN_MIN || buffer->length > LRQ_LEN_MAX)
+            {
+                debugPrint("Socket: %i, Inavlid len=%i :(. message type: %i", buffer->length, fd, buffer->type);
+                return INVALID_LEN;
+            }
+            return VALID_LEN;
+        }
+        case C2S: 
+        {
+            if(buffer->length > TEXT_MAX){
+                debugPrint("Invalid len=%i :(. socket: %i, message type: %i", buffer->length, fd, buffer->type);
+                return INVALID_LEN;
+            }
+            return VALID_LEN;
+        }
+        default: 
+        {
+            debugPrint("you shouldn't be here ┐('-`;)┌");
+            return INVALID_TYPE;
+        }
     }
 
-    debugPrint("If this message is displayed something went wrong with the type. In other words: If you can see this, you done goofed(*｀Д´)ノ！！！");
-    return EXIT_FAILURE;
 
-}
-
-int recieveLen(int fd, Message *buffer)
-{
-    // Receive length (2 bytes, big endian)
-    uint16_t net_length;
-    ssize_t received = recv(fd, &net_length, sizeof(net_length), MSG_WAITALL);
-    if (received != sizeof(net_length)) {
-        debugPrint("networkReceive: Failed to receive message length. Received: %zd", received);
-        return EXIT_FAILURE;
-    }
-
-    //convert length byte order
-    buffer->header.length = ntohs(net_length);
-    debugPrint("networkReceive: Received length: %u", buffer->header.length);
-
-    //validate length
-    if (buffer->header.length + 3 < 4 || buffer->header.length + 3 > MSG_MAX) {
-        debugPrint("networkReceive: Invalid message length: %u (%u with type and length)", buffer->header.length, buffer->header.length + 3);
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
-}
-
-int recieveHeader(int fd, Message *buffer)
-{
-    int type = recieveType(fd, buffer);
-    int length = recieveLen(fd, buffer);
-
-    return type;
 }
 
 int recieveMessage(int fd, Message *buffer)
 {
-    ssize_t body_length = buffer->header.length;
-    ssize_t received = recv(fd, &buffer->body, body_length, MSG_WAITALL);
-    if (received != body_length) {
-        debugPrint("networkReceive: Failed to receive full message. Received: %zd", received);
-        return EXIT_FAILURE;
-    }
+    switch (buffer->header.type){
+        case LRQ: {
+            ssize_t tmp = recv(fd, &buffer->body.login_request, buffer->header.length, MSG_WAITALL);
+            tmp = handleRecvReturn(tmp, fd, buffer->header.length);
 
-    return EXIT_SUCCESS;
+            if (tmp != RECV_SUCCESS){
+                return tmp;
+            }
+
+            buffer->body.login_request.magic = ntohl(buffer->body.login_request.magic);
+            return RECV_SUCCESS;
+        }
+        case C2S:{
+            ssize_t tmp = recv(fd, &buffer->body.client_to_server, buffer->header.length, MSG_WAITALL);
+            tmp = handleRecvReturn(tmp, fd, buffer->header.length);
+            if (tmp != RECV_SUCCESS){
+                return tmp;
+            }
+            return RECV_SUCCESS;
+        }
+    }
+    return INVALID_TYPE;
 
 }
 
 int networkReceive(int fd, Message *buffer)
 {
     
-    debugPrint("networkRecieve reached");
-    //TODO: Recieve type
-    if (recieveType(fd, buffer) == INVALID_TYPE||EXIT_FAILURE)
+    int tmp = recieveHeader(fd, &buffer->header);
+    if (tmp != RECV_SUCCESS)
     {
-        return EXIT_FAILURE;
-    }
-
-    //TODO: Receive length and like do shit yk
-    if (recieveLen(fd, buffer) == INVALID_TYPE||EXIT_FAILURE)
-    {
-        return EXIT_FAILURE;
+        return tmp;
     }
 	
 
 	//TODO: Receive text
-    if (recieveMessage(fd, buffer) == INVALID_TYPE||EXIT_FAILURE)
+    tmp = recieveMessage(fd, buffer);
+    if (tmp != RECV_SUCCESS)
     {
-        return EXIT_FAILURE;
+        return FAILED;
     }
 	
-	return EXIT_SUCCESS;
+	return RECV_SUCCESS;
 }
 
 int networkSend(int fd, const Message *buffer)
 {
 	//TODO: Send complete message
 
-	errno = ENOSYS;
-	return -1;
+    size_t size = sizeof(buffer->header) + ntohs(buffer->header.length);
+    ssize_t tmp = send(fd, buffer, size, MSG_NOSIGNAL);
+
+    if(tmp != (ssize_t)sizeof(buffer->header) + ntohs(buffer->header.length)){
+        errnoPrint("send() %zu", sizeof(buffer->header) + ntohs(buffer->header.length));
+        return FAILED;
+    }
+
+	return SUCCESS;
 }
