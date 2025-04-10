@@ -33,7 +33,7 @@ const char *userNotFoundMsg = "User not found (  -_・)?";
 const char *noKickingAdminMsg = "You cannot kick an admin ！Σ(x_x;)!";
 const char *fullQueueMsg = "Message queue is full (´･ｪ･｀)";
 
-/*int handleLRQ(Message *buffer, int client_socket)
+int handleLRQ(Message *buffer, int client_socket)
 {
 	debugPrint("handling LRQ");
 
@@ -73,14 +73,37 @@ const char *fullQueueMsg = "Message queue is full (´･ｪ･｀)";
         return EXIT_FAILURE;
     }
 
+	// Extract and validate name
+    size_t name_length = buffer->header.length; // Subtract fixed fields
+    if (name_length > NAME_MAX) 
+	{
+        debugPrint("Name length exceeds maximum allowed size");
+        if (sendLoginResponse(client_socket, LRE_NAME_INVALD, "09Server")) 
+		{
+            errorPrint("Failed to send LoginResponse to client %d with code %d", client_socket, LRE_NAME_INVALD);
+        }
+        close(client_socket);
+        return EXIT_FAILURE;
+    }
+
+	char name[NAME_MAX + 1];
+    memcpy(name, buffer->body.login_request.name, name_length);
+    name[name_length] = '\0'; // Null terminate
+
+    // Chec5k name (ASCII)
+    for (size_t i = 0; i < strlen(name); i++) {
+        if (name[i] < 33 || name[i] > 126 || name[i] == '\'' || name[i] == '"' || name[i] == '`') {
+            debugPrint("Invalid character in name: %s\n", name);
+            if (sendLoginResponse(client_socket, LRE_NAME_INVALD, "09Server")) {
+                errorPrint("Failed to send LoginResponse to client %d with code %d", client_socket, LRE_NAME_INVALD);
+            }
+            close(client_socket);
+            return EXIT_FAILURE;
+        }
+    }
+
 	return EXIT_SUCCESS;
 
-}*/
-
-int handleLRQ()
-{
-	//this is for testing purposes only
-	return 1;
 }
 
 int sendLRE()

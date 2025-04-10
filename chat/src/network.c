@@ -120,8 +120,13 @@ int recieveMessage(int fd, Message *buffer)
 
 int networkReceive(int fd, Message *buffer)
 {
+    debugPrint("Header type: %d", buffer->header.type);
+    debugPrint("Header length: %d", buffer->header.length);
+    int tmp = receiveHeader(fd, &buffer->header);
+    debugPrint("header is: %d", tmp);
+    debugPrint("Header type: %d", buffer->header.type);
+    debugPrint("Header length: %d", buffer->header.length);
     
-    int tmp = recieveHeader(fd, &buffer->header);
     if (tmp != RECV_SUCCESS)
     {
         return tmp;
