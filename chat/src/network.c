@@ -35,6 +35,7 @@ static ssize_t handleRecvReturn(ssize_t tmp, int fd, ssize_t expected_len){
 
 int recieveHeader(int fd, messageHeader *buffer)
 {
+    //recieve type
     ssize_t tmp = recv(fd, &buffer->type, sizeof(buffer->type), MSG_WAITALL);
     tmp = handleRecvReturn(tmp, fd, sizeof(buffer->type));
 
@@ -43,6 +44,7 @@ int recieveHeader(int fd, messageHeader *buffer)
         return tmp;
     }
 
+    //recieve length
     tmp = recv(fd, &buffer->length, sizeof(buffer->length), MSG_WAITALL);
     tmp = handleRecvReturn(tmp, fd, sizeof(buffer->length));
 
