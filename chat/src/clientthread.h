@@ -2,5 +2,6 @@
 #define CLIENTTHREAD_H
 
 void *clientthread(void *arg);
+int sendLRE();
 
 #endif

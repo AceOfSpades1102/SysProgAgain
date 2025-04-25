@@ -124,14 +124,14 @@ int networkReceive(int fd, Message *buffer)
 {
     debugPrint("Header type: %d", buffer->header.type);
     debugPrint("Header length: %d", buffer->header.length);
-    int tmp = receiveHeader(fd, &buffer->header);
+    int tmp = recieveHeader(fd, &buffer->header);
     debugPrint("header is: %d", tmp);
     debugPrint("Header type: %d", buffer->header.type);
     debugPrint("Header length: %d", buffer->header.length);
     
     if (tmp != RECV_SUCCESS)
     {
-        return tmp;
+        return FAILED;
     }
 	
 
@@ -149,13 +149,37 @@ int networkSend(int fd, const Message *buffer)
 {
 	//TODO: Send complete message
 
-    size_t size = sizeof(buffer->header) + ntohs(buffer->header.length);
-    ssize_t tmp = send(fd, buffer, size, MSG_NOSIGNAL);
+    debugPrint("networkSend enterd");
+    debugPrint("type=%d, length=%u", buffer->header.type, buffer->header.length);
 
-    if(tmp != (ssize_t)sizeof(buffer->header) + ntohs(buffer->header.length)){
+    if (buffer->header.length > MSG_MAX) {
+        errorPrint("networkSend: Buffer length > MAX_MESSAGE_SIZE.");
+        errno = EINVAL;
+        return EXIT_FAILURE;
+    }
+
+    // Send the complete message
+    size_t total_size = buffer->header.length + 3;
+
+    unsigned char send_buffer[total_size];
+    memset(send_buffer, 0, total_size); // Clear send buffer
+
+    // nachricht in den puffer schreiben
+    send_buffer[0] = buffer->header.type;
+    *(uint16_t *)(send_buffer + 1) = htons(buffer->header.length); // Length (network byte order) 
+    memcpy(send_buffer + 3, &buffer->body, buffer->header.length); // Body
+
+
+
+    ssize_t tmp = send(fd, send_buffer, total_size, 0);
+
+    if(tmp != (ssize_t)total_size)
+    {
         errnoPrint("send() %zu", sizeof(buffer->header) + ntohs(buffer->header.length));
         return FAILED;
     }
+
+    debugPrint("Message sent successfully: type=%d, length=%u", buffer->header.type, buffer->header.length);
 
 	return SUCCESS;
 }
