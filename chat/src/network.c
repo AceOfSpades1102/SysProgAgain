@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include "network.h"
+#include "user.h"
 #include "util.h"
 #include "def.h"
 
@@ -182,4 +183,53 @@ int networkSend(int fd, const Message *buffer)
     debugPrint("Message sent successfully: type=%d, length=%u", buffer->header.type, buffer->header.length);
 
 	return SUCCESS;
+}
+
+int broadcastServer2Client(const char *orig_sender,const char *text, uint64_t timestamp)
+{
+    debugPrint("broadcastServer2Client: Broadcasting Server2Client for user %s. ( ´∀｀ )b", original_sender);
+    
+    struct {
+        uint64_t timestamp;
+        const char *original_sender;
+        const char *text;
+    } context = { .timestamp = timestamp, .original_sender = original_sender, .text = text};
+
+    forEachUser(broadcast_server2client_callback, &context);
+    debugPrint("broadcastServer2Client: Finished broadcasting Server2Client for user %s. ( ´∀｀ )b", original_sender);
+
+    return SUCCESS;
+}
+
+int sendServer2Client()
+{
+   
+}
+
+
+int broadcast_server2client_callback(User *user, void *context)
+{
+    {
+        if (!user || !context) {
+            return;
+        }
+    
+        struct {
+            uint64_t timestamp;
+            const char *original_sender;
+            const char *text;
+        } *ctx = context;
+    
+        Message msg;
+        prepareServer2ClientMessage(&msg, ctx->original_sender, ctx->timestamp, ctx->text);
+    
+        debugPrint("broadcast_server2client_callback: Sending to user %s (fd=%d)", user->name, user->sock);
+        debugPrint("Message Debug: type=%d, length=%u, text='%s'", msg.type, msg.length, msg.body.server2Client.text);
+    
+        if (networkSend(user->sock, &msg) == -1) {
+            debugPrint("Failed to send Server2Client to user %s (fd=%d). Σ(x_x;)!", user->name, user->sock);
+        } else {
+            debugPrint("Server2Client sent to user %s (fd=%d). ( ´∀｀ )b", user->name, user->sock);
+        }
+    }
 }
