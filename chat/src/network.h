@@ -64,7 +64,7 @@ typedef struct __attribute__((packed)){
 int networkReceive(int fd, Message *buffer);
 int networkSend(int fd, const Message *buffer);
 int broadcastServer2Client(const char *orig_sender,const char *text, uint64_t timestamp);
-
+int sendServer2Client(int receiver_client, const char *original_sender, uint64_t timestamp, const char *text);
 
 
 #endif

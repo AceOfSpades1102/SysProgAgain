@@ -201,8 +201,25 @@ int broadcastServer2Client(const char *orig_sender,const char *text, uint64_t ti
     return SUCCESS;
 }
 
-int sendServer2Client()
+
+int sendServer2Client(int receiver_client, const char *original_sender, uint64_t timestamp, const char *text)
 {
+    debugPrint("sendServer2Client: Sending Server2Client to user %s. ( ´∀｀ )b", receiver_client);
+    
+    Message msg;
+    prepareServer2ClientMessage(&msg, original_sender, timestamp, text);
+
+    debugPrint("Sending Server2Client message to user %s (fd=%d)", original_sender, receiver_client);
+    debugPrint("Message Debug: type=%d, length=%u, text='%s'", msg.header.type, msg.header.length, msg.body.server_to_client.text);
+   
+    if(networkSend(receiver_client, &msg) == -1) {
+        debugPrint("Failed to send Server2Client to user %s (fd=%d). Σ(x_x;)", original_sender, receiver_client);
+        return FAILED;
+    } else {
+        debugPrint("Server2Client sent to user %s (fd=%d). ( ´∀｀ )b", original_sender, receiver_client);
+        return SUCCESS;
+    }
+    return EXIT_SUCCESS
    
 }
 

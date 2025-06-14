@@ -10,7 +10,7 @@ static int is_paused = 0;
 
 
 static void *broadcastAgent(void *arg)
-{	//TODO: Implement thread function for the broadcast agent here!
+{	//TODONE: Implement thread function for the broadcast agent here!
 	debugPrintf("Broadcast agent started ( ´∀｀ )b \n");
 	BroadcastMessage msg;
 	
@@ -100,7 +100,47 @@ void broadcastAgentCleanup(void)
 	debugPrint("Broadcast agent: Successfully killed ( ´∀｀ )b \n");
 }
 
-//TODO: Implement broadcastMessage function
+//TODONE: Implement broadcastMessage function
+
+int broadcastMessage(const char *sender, const char *text, uint64_t timestamp)
+{
+	if messageQueue == (mqd_t)-1) {
+		errnoPrint("broadcastMessage: Message queue not initialized Σ(x_x;)!");
+		return EXIT_FAILURE;
+	}
+
+	BroadcastMessage msg;
+
+	strncpy(msg.sender, sender, MAX_NAME);
+	msg.sender[MAX_NAME] = '\0'; // Ensure null termination
+
+	strncpy(msg.message, text, MAX_MESSAGE);
+	msg.message[MAX_MESSAGE - 1] = '\0'; // Ensure null termination
+	
+	msg.timestamp = timestamp;
+	
+	//timeout handling
+	struct timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+	ts.tv_sec += 1; // wait for 1 second
+
+	debugPrint("Broadcasting message: trying to send '%s' from '%s' at %lu ( ´∀｀ )b \n", msg.message, msg.sender, msg.timestamp);
+	int result = mq_timedsend(messageQueue, (const char *)&msg, sizeof(msg), 0, &ts);
+
+	if result (== -1) {
+		if (errno == ETIMEDOUT) {
+			errnoPrint("broadcastMessage: Message sent timed out Σ(x_x;)!");
+			return EXIT_FAILURE;
+		} else {
+			errnoPrint("broadcastMessage: Failed to send message Σ(x_x;)!");
+			//sendServer2Client(getUserByName(sender)->socket, "Broadcasting failed: Queue full");
+			return EXIT_FAILURE;
+		}
+	}
+
+	debugPrint("Broadcasting message: '%s' from '%s' at %lu ( ´∀｀ )b \n", msg.message, msg.sender, msg.timestamp);
+	return EXIT_SUCCESS;
+}
 
 //TODONE : Implement pauseBroadcasting function
 void pauseBroadcasting() {
