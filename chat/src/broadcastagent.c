@@ -1,5 +1,9 @@
 #include <pthread.h>
 #include <mqueue.h>
+#include <unistd.h>
+#include <errno.h>
+#include <semaphore.h>
+#include <stdlib.h>
 #include "broadcastagent.h"
 #include "util.h"
 
@@ -7,11 +11,12 @@ static mqd_t messageQueue;
 static pthread_t threadId;
 static int exitFlag = 0;
 static int is_paused = 0;
+static sem_t pause_sem;
 
 
 static void *broadcastAgent(void *arg)
 {	//TODONE: Implement thread function for the broadcast agent here!
-	debugPrintf("Broadcast agent started ( ´∀｀ )b \n");
+	debugPrint("Broadcast agent started ( ´∀｀ )b \n");
 	BroadcastMessage msg;
 	
 	while (!exitFlag) {
@@ -38,10 +43,10 @@ static void *broadcastAgent(void *arg)
 			errnoPrint("Broadcast agent failed Σ(x_x;)!");
 			break;
 		}
-		debugPrint("Broadcast agent received message from '%s':  '%s' ( ´∀｀ )b\n", msg.sender, msg.message);
+		debugPrint("Broadcast agent received message from '%s':  '%s' ( ´∀｀ )b\n", msg.sender, msg.text);
 
 		// share message with all users
-		broadcastServer2Client(msg.sender, msg.message, msg.timestamp);
+		broadcastServer2Client(msg.sender, msg.text, msg.timestamp);
 	}
 	return NULL;	
 
@@ -68,7 +73,7 @@ int broadcastAgentInit(void)
 		errnoPrint("broadcastAgentInit: Failed to create message queue Σ(x_x;)!");
 		return EXIT_FAILURE;
 	}
-	debugPrint("Broadcast agent: Message queue created successfully ( ´∀｀ )b %d \n" messageQueue);
+	debugPrint("Broadcast agent: Message queue created successfully ( ´∀｀ )b %d \n", messageQueue);
 
 	//TODONE: start thread
 	if (pthread_create(&threadId, NULL, broadcastAgent, NULL) != 0) {
@@ -104,7 +109,7 @@ void broadcastAgentCleanup(void)
 
 int broadcastMessage(const char *sender, const char *text, uint64_t timestamp)
 {
-	if messageQueue == (mqd_t)-1) {
+	if (messageQueue == (mqd_t)-1) {
 		errnoPrint("broadcastMessage: Message queue not initialized Σ(x_x;)!");
 		return EXIT_FAILURE;
 	}
@@ -114,8 +119,8 @@ int broadcastMessage(const char *sender, const char *text, uint64_t timestamp)
 	strncpy(msg.sender, sender, MAX_NAME);
 	msg.sender[MAX_NAME] = '\0'; // Ensure null termination
 
-	strncpy(msg.message, text, MAX_MESSAGE);
-	msg.message[MAX_MESSAGE - 1] = '\0'; // Ensure null termination
+	strncpy(msg.text, text, MAX_MESSAGE);
+	msg.text[MAX_MESSAGE - 1] = '\0'; // Ensure null termination
 	
 	msg.timestamp = timestamp;
 	
@@ -124,10 +129,10 @@ int broadcastMessage(const char *sender, const char *text, uint64_t timestamp)
 	clock_gettime(CLOCK_REALTIME, &ts);
 	ts.tv_sec += 1; // wait for 1 second
 
-	debugPrint("Broadcasting message: trying to send '%s' from '%s' at %lu ( ´∀｀ )b \n", msg.message, msg.sender, msg.timestamp);
+	debugPrint("Broadcasting message: trying to send '%s' from '%s' at %lu ( ´∀｀ )b \n", msg.text, msg.sender, msg.timestamp);
 	int result = mq_timedsend(messageQueue, (const char *)&msg, sizeof(msg), 0, &ts);
 
-	if result (== -1) {
+	if (result == -1) {
 		if (errno == ETIMEDOUT) {
 			errnoPrint("broadcastMessage: Message sent timed out Σ(x_x;)!");
 			return EXIT_FAILURE;
@@ -138,7 +143,7 @@ int broadcastMessage(const char *sender, const char *text, uint64_t timestamp)
 		}
 	}
 
-	debugPrint("Broadcasting message: '%s' from '%s' at %lu ( ´∀｀ )b \n", msg.message, msg.sender, msg.timestamp);
+	debugPrint("Broadcasting message: '%s' from '%s' at %lu ( ´∀｀ )b \n", msg.text, msg.sender, msg.timestamp);
 	return EXIT_SUCCESS;
 }
 

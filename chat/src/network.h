@@ -3,6 +3,13 @@
 
 #include <stdint.h>
 #include "def.h"
+#include "user.h"
+
+#define MAX_NAME 31 // name and sname
+#define MAX_TEXT 512
+#define MAX_MESSAGE 555
+#define TIMESTAMP_LEN 8 // 64 bit timestamp
+
 
 /* TODO: When implementing the fully-featured network protocol (including
  * login), replace this with message structures derived from the network
@@ -65,6 +72,7 @@ int networkReceive(int fd, Message *buffer);
 int networkSend(int fd, const Message *buffer);
 int broadcastServer2Client(const char *orig_sender,const char *text, uint64_t timestamp);
 int sendServer2Client(int receiver_client, const char *original_sender, uint64_t timestamp, const char *text);
-
+void prepareServer2ClientMessage(Message *msg, const char *original_sender, uint64_t timestamp, const char *text);
+void broadcast_server2client_callback(User *user, void *context);
 
 #endif

@@ -1,4 +1,4 @@
-int recieveType(int fd, Message *buffer)
+int receiveType(int fd, Message *buffer)
 {
     ssize_t received = recv(fd, &buffer->header.type, sizeof(buffer->header.type), MSG_WAITALL);
     

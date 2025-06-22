@@ -9,7 +9,7 @@
 int main(int argc, char **argv)
 {
 	utilInit(argv[0]);
-	infoPrint("Chat server, group 23");	//TODONE: group number is 23
+	infoPrint("Chat server, group 23 :)");	//TODONE: group number is 23
 
 	debugEnable();
 	infoPrint("Debug mode enabled!");

@@ -187,16 +187,16 @@ int networkSend(int fd, const Message *buffer)
 
 int broadcastServer2Client(const char *orig_sender,const char *text, uint64_t timestamp)
 {
-    debugPrint("broadcastServer2Client: Broadcasting Server2Client for user %s. ( ´∀｀ )b", original_sender);
+    debugPrint("broadcastServer2Client: Broadcasting Server2Client for user %s. ( ´∀｀ )b", orig_sender);
     
     struct {
         uint64_t timestamp;
-        const char *original_sender;
+        const char *orig_sender;
         const char *text;
-    } context = { .timestamp = timestamp, .original_sender = original_sender, .text = text};
+    } context = { .timestamp = timestamp, .orig_sender = orig_sender, .text = text};
 
     forEachUser(broadcast_server2client_callback, &context);
-    debugPrint("broadcastServer2Client: Finished broadcasting Server2Client for user %s. ( ´∀｀ )b", original_sender);
+    debugPrint("broadcastServer2Client: Finished broadcasting Server2Client for user %s. ( ´∀｀ )b", orig_sender);
 
     return SUCCESS;
 }
@@ -219,34 +219,65 @@ int sendServer2Client(int receiver_client, const char *original_sender, uint64_t
         debugPrint("Server2Client sent to user %s (fd=%d). ( ´∀｀ )b", original_sender, receiver_client);
         return SUCCESS;
     }
-    return EXIT_SUCCESS
+    return SUCCESS;
    
 }
 
 
-int broadcast_server2client_callback(User *user, void *context)
+// Removed duplicate and incorrect definition of broadcast_server2client_callback
+
+void prepareServer2ClientMessage(Message *msg, const char *original_sender, uint64_t timestamp, const char *text)
 {
-    {
-        if (!user || !context) {
-            return;
-        }
-    
-        struct {
-            uint64_t timestamp;
-            const char *original_sender;
-            const char *text;
-        } *ctx = context;
-    
-        Message msg;
-        prepareServer2ClientMessage(&msg, ctx->original_sender, ctx->timestamp, ctx->text);
-    
-        debugPrint("broadcast_server2client_callback: Sending to user %s (fd=%d)", user->name, user->sock);
-        debugPrint("Message Debug: type=%d, length=%u, text='%s'", msg.type, msg.length, msg.body.server2Client.text);
-    
-        if (networkSend(user->sock, &msg) == -1) {
-            debugPrint("Failed to send Server2Client to user %s (fd=%d). Σ(x_x;)!", user->name, user->sock);
-        } else {
-            debugPrint("Server2Client sent to user %s (fd=%d). ( ´∀｀ )b", user->name, user->sock);
-        }
+    // validate original_sender
+    size_t sender_len = strlen(original_sender);
+    if (sender_len > NAME_MAX) {
+        errorPrint("prepareServer2ClientMessage: original_sender exceeds NAME_MAX ！Σ(x_x;).");
+        return;
+    }
+    // validate text
+    size_t text_len = strlen(text);
+    if (text_len > MSG_MAX) {
+        errorPrint("prepareServer2ClientMessage: text exceeds MSG_MAX ！Σ(x_x;).");
+        return;
+    }
+
+    // Prepare the message
+    memset(msg, 0, sizeof(Message));
+
+    msg->header.type = S2C; // Set message type to ServerToClient
+    msg->header.length = TIMESTAMP_LEN + NAME_MAX + 1 + MSG_MAX; // Set length to include timestamp, originalSender, and text
+    msg->body.server_to_client.timestamp = htonl(timestamp); 
+
+    memset(msg->body.server_to_client.originalSender, 0, NAME_MAX + 1); // Clear originalSender
+    memcpy(msg->body.server_to_client.originalSender, original_sender, sender_len);
+    msg->body.server_to_client.originalSender[sender_len] = '\0'; // Ensure null termination
+
+    memcpy(msg->body.server_to_client.text, text, text_len);
+
+    debugPrint("prepareServer2ClientMessage: Prepared message for original_sender='%s', timestamp=%lu, text='%s'", 
+                msg->body.server_to_client.originalSender, ntohl(msg->body.server_to_client.timestamp), msg->body.server_to_client.text);
+}
+
+void broadcast_server2client_callback(User *user, void *context)
+{
+    if(!user || !context) {
+        return;
+    }
+    struct {
+        uint64_t timestamp;
+        const char *original_sender;
+        const char *text;
+    } *ctx = context;
+
+    Message msg;
+    prepareServer2ClientMessage(&msg, ctx->original_sender, ctx->timestamp, ctx->text);
+
+    debugPrint("broadcast_server2client_callback: Sending to user %s (fd=%d)", user->name, user->sock);
+    debugPrint("Message Debug: type=%d, length=%u, text='%s'", msg.header.type, msg.header.length, msg.body.server_to_client.text);
+
+    if(networkSend(user->sock, &msg) == -1) {
+        debugPrint("Failed to send Server2Client to user %s (fd=%d). Σ(x_x;)", user->name, user->sock);
+    } else {
+        debugPrint("Server2Client sent to user %s (fd=%d). ( ´∀｀ )b", user->name, user->sock);
     }
 }
