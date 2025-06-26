@@ -121,7 +121,7 @@ void *clientthread(void *arg)
 	int client_socket = *(int *)arg;
 	free(arg);
 
-	debugPrint("Client thread started (ﾉ>ω<)ﾉ");
+	debugPrint("Client thread started (ﾉ>ω<)ﾉ (socket: %d)", client_socket);
 
 	//TODO: everything here lolz
 
@@ -148,7 +148,7 @@ void *clientthread(void *arg)
 	//TODO: Receive messages and send them to all users, skip self
 	//TODO: literally everything
 
-	close(clientthread);//maybe different var
+	close(client_socket);//maybe different var
 	debugPrint("Client thread stopping.");
 	return NULL;
 }

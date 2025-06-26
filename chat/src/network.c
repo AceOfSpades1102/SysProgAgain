@@ -38,7 +38,10 @@ int recieveHeader(int fd, messageHeader *buffer)
 {
     //recieve type
     ssize_t tmp = recv(fd, &buffer->type, sizeof(buffer->type), MSG_WAITALL);
+    //debugPrint("type: %ls", tmp);
     tmp = handleRecvReturn(tmp, fd, sizeof(buffer->type));
+    //debugPrint("type: %ls", tmp);
+
 
     if(tmp != RECV_SUCCESS)
     {

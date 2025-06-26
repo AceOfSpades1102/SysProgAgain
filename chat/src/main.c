@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 				else
 				{
 					debugDisable();
-					infoPrint("Debug mode enabled!");
+					infoPrint("Debug mode disabled!");
 				}
 				break;
 			}
