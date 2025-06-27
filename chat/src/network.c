@@ -34,13 +34,14 @@ static ssize_t handleRecvReturn(ssize_t tmp, int fd, ssize_t expected_len){
     return FAILED;
 }
 
-int recieveHeader(int fd, messageHeader *buffer)
+int recieveHeader(int fd, Message *buffer)
 {
     //recieve type
-    ssize_t tmp = recv(fd, &buffer->type, sizeof(buffer->type), MSG_WAITALL);
-    //debugPrint("type: %ls", tmp);
-    tmp = handleRecvReturn(tmp, fd, sizeof(buffer->type));
-    //debugPrint("type: %ls", tmp);
+    debugPrint("Test");
+    ssize_t tmp = recv(fd, &buffer->header.type, sizeof(buffer->header.type), MSG_WAITALL);
+    debugPrint("type: %ls", tmp);
+    tmp = handleRecvReturn(tmp, fd, sizeof(buffer->header.type));
+    debugPrint("type: %ls", tmp);
 
 
     if(tmp != RECV_SUCCESS)
@@ -49,40 +50,40 @@ int recieveHeader(int fd, messageHeader *buffer)
     }
 
     //recieve length
-    tmp = recv(fd, &buffer->length, sizeof(buffer->length), MSG_WAITALL);
-    tmp = handleRecvReturn(tmp, fd, sizeof(buffer->length));
+    tmp = recv(fd, &buffer->header.length, sizeof(buffer->header.length), MSG_WAITALL);
+    tmp = handleRecvReturn(tmp, fd, sizeof(buffer->header.length));
 
     if(tmp != RECV_SUCCESS)
     {
         return tmp;
     }
-    buffer->length = ntohs(buffer->length);
+    buffer->header.length = ntohs(buffer->header.length);
 
     //replace that
     //return checkHeader(buffer, fd);
     //with this
 
-    if(buffer->type > TYPE_MAX)
+    if(buffer->header.type > TYPE_MAX)
     {
         debugPrint("That was not a valid type ._.");
         return INVALID_TYPE;
     }
 
-    switch(buffer->type)
+    switch(buffer->header.type)
     {
         case LRQ: 
         {
-            if(buffer->length < LRQ_LEN_MIN || buffer->length > LRQ_LEN_MAX)
+            if(buffer->header.length < LRQ_LEN_MIN || buffer->header.length > LRQ_LEN_MAX)
             {
-                debugPrint("Socket: %i, Inavlid len=%i :(. message type: %i", buffer->length, fd, buffer->type);
+                debugPrint("Socket: %i, Inavlid len=%i :(. message type: %i", buffer->header.length, fd, buffer->header.type);
                 return INVALID_LEN;
             }
             return VALID_LEN;
         }
         case C2S: 
         {
-            if(buffer->length > TEXT_MAX){
-                debugPrint("Invalid len=%i :(. socket: %i, message type: %i", buffer->length, fd, buffer->type);
+            if(buffer->header.length > TEXT_MAX){
+                debugPrint("Invalid len=%i :(. socket: %i, message type: %i", buffer->header.length, fd, buffer->header.type);
                 return INVALID_LEN;
             }
             return VALID_LEN;
@@ -126,12 +127,14 @@ int recieveMessage(int fd, Message *buffer)
 
 int networkReceive(int fd, Message *buffer)
 {
+    int tmp = recieveHeader(fd, buffer);
     debugPrint("Header type: %d", buffer->header.type);
     debugPrint("Header length: %d", buffer->header.length);
-    int tmp = recieveHeader(fd, &buffer->header);
+    
     debugPrint("header is: %d", tmp);
     debugPrint("Header type: %d", buffer->header.type);
     debugPrint("Header length: %d", buffer->header.length);
+
     
     if (tmp != RECV_SUCCESS)
     {

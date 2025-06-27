@@ -28,7 +28,7 @@ static int createPassiveSocket(in_port_t port)
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;		//only return IPv4 addresses
 	addr.sin_port = htons(port);
-	addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	addr.sin_addr.s_addr = INADDR_ANY;
 
 	//TODONE: bind() to port
 	if (bind(fd, (const struct sockaddr *)&addr, sizeof(struct sockaddr_in)) < 0)
@@ -39,7 +39,7 @@ static int createPassiveSocket(in_port_t port)
 	}
 
 	//TODONE: listen()
-	if (listen(fd, 7) == -1) 
+	if (listen(fd, SOMAXCONN) == -1) 
 	{
         errnoPrint("failed to listen");
         return -1;

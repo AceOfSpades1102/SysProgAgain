@@ -125,7 +125,8 @@ void *clientthread(void *arg)
 
 	//TODO: everything here lolz
 
-	Message buffer;
+    Message buffer;
+	//struct Message *buffer = malloc(sizeof(Message));
     memset(&buffer, 0, sizeof(Message));
 
 	//recieve shit
