@@ -16,6 +16,7 @@ static sem_t pause_sem;
 
 static void *broadcastAgent(void *arg)
 {	//TODONE: Implement thread function for the broadcast agent here!
+	(void)arg; // Suppress unused parameter warning
 	debugPrint("Broadcast agent started ( ´∀｀ )b \n");
 	BroadcastMessage msg;
 	
@@ -116,11 +117,11 @@ int broadcastMessage(const char *sender, const char *text, uint64_t timestamp)
 
 	BroadcastMessage msg;
 
-	strncpy(msg.sender, sender, MAX_NAME);
-	msg.sender[MAX_NAME] = '\0'; // Ensure null termination
+	strncpy(msg.sender, sender, NAME_MAX);
+	msg.sender[NAME_MAX] = '\0'; // Ensure null termination
 
-	strncpy(msg.text, text, MAX_MESSAGE);
-	msg.text[MAX_MESSAGE - 1] = '\0'; // Ensure null termination
+	strncpy(msg.text, text, TEXT_MAX);
+	msg.text[TEXT_MAX - 1] = '\0'; // Ensure null termination
 	
 	msg.timestamp = timestamp;
 	

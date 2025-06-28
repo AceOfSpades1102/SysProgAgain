@@ -8,8 +8,8 @@
 #define BROADCASTING_ENABLED 1
 
 typedef struct {
-    char sender[MAX_NAME + 7];
-    char text[MAX_TEXT];
+    char sender[NAME_MAX + 1];
+    char text[TEXT_MAX];
     uint64_t timestamp;
 } BroadcastMessage;
 
