@@ -50,7 +50,9 @@ int handleLRQ(Message *buffer, int client_socket)
     }
 
 	// Validate magic number
-    if (ntohl(buffer->body.login_request.magic) != MAGIC_LRQ) 
+	uint32_t received_magic = buffer->body.login_request.magic;
+	debugPrint("Received magic: 0x%08x, Expected: 0x%08x", received_magic, MAGIC_LRQ);
+    if (received_magic != MAGIC_LRQ) 
 	{
         debugPrint("Invalid magic number in LoginRequest");
         if (sendLRE(client_socket, LRE_UNKNOWN_ERROR, "09Server")) 
@@ -90,7 +92,7 @@ int handleLRQ(Message *buffer, int client_socket)
     memcpy(name, buffer->body.login_request.name, name_length);
     name[name_length] = '\0'; // Null terminate
 
-    // Chec5k name (ASCII)
+    // Check name (ASCII)
     for (size_t i = 0; i < strlen(name); i++) {
         if (name[i] < 33 || name[i] > 126 || name[i] == '\'' || name[i] == '"' || name[i] == '`') {
             debugPrint("Invalid character in name: %s\n", name);
@@ -102,6 +104,15 @@ int handleLRQ(Message *buffer, int client_socket)
         }
     }
 
+    // All validation passed - send success response
+    debugPrint("Login validation successful for user: %s", name);
+    if (sendLRE(client_socket, LRE_SUCCESS, "09Server")) {
+        errorPrint("Failed to send success LoginResponse to client %d", client_socket);
+        close(client_socket);
+        return EXIT_FAILURE;
+    }
+
+    debugPrint("Success LoginResponse sent to client %d", client_socket);
 	return EXIT_SUCCESS;
 
 }
@@ -144,7 +155,7 @@ void *clientthread(void *arg)
 	//struct Message *buffer = malloc(sizeof(Message));
     memset(&buffer, 0, sizeof(Message));
 
-	//recieve shit
+	//receive initial login request
 	if (networkReceive(client_socket, &buffer) == 0)
 	{
 		if (buffer.header.type == LRQ)
@@ -153,16 +164,51 @@ void *clientthread(void *arg)
 			if (handleLRQ(&buffer, client_socket) == 0)
 			{
 				debugPrint("Login successful");
-
+				
+				// TODO: Create user and add to user list
+				// User *user = createUser(name, client_socket);
+				// addUser(user);
+				
+				// Keep connection alive and handle further messages
+				debugPrint("Client thread will continue listening for messages...");
+				
+				// Message loop - keep receiving messages from this client
+				while (1) {
+					memset(&buffer, 0, sizeof(Message));
+					int result = networkReceive(client_socket, &buffer);
+					
+					if (result == 0) {
+						// Handle different message types
+						switch (buffer.header.type) {
+							case C2S:
+								// Handle client-to-server chat message
+								debugPrint("Received C2S message from client %d", client_socket);
+								// TODO: Broadcast to other clients
+								break;
+							case UAD:
+								// Handle user admin command
+								debugPrint("Received UAD command from client %d", client_socket);
+								// TODO: Handle admin commands
+								break;
+							default:
+								debugPrint("Received unknown message type %d from client %d", buffer.header.type, client_socket);
+								break;
+						}
+					} else {
+						// Connection lost or error
+						debugPrint("Client %d disconnected or error occurred", client_socket);
+						break;
+					}
+				}
+			} else {
+				debugPrint("Login failed for client %d", client_socket);
 			}
-			//create user (in lrq?)
+		} else {
+			debugPrint("Expected LRQ but received type %d from client %d", buffer.header.type, client_socket);
 		}
+	} else {
+		debugPrint("Failed to receive initial message from client %d", client_socket);
 	}
-    
-	debugPrint("Client thread started.");
-
-	//TODO: Receive messages and send them to all users, skip self
-	//TODO: literally everything
 
 	close(client_socket);//maybe different var
 	debugPrint("Client thread stopping.");
