@@ -24,6 +24,15 @@ static int createPassiveSocket(in_port_t port)
         return -1;
     }
 
+	// Set SO_REUSEADDR to allow immediate reuse of the address
+	int opt = 1;
+	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) 
+	{
+		errnoPrint("failed to set SO_REUSEADDR");
+		close(fd);
+		return -1;
+	}
+
 	struct sockaddr_in addr;
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;		//only return IPv4 addresses

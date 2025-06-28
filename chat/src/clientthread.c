@@ -155,7 +155,8 @@ void *clientthread(void *arg)
 	//struct Message *buffer = malloc(sizeof(Message));
     memset(&buffer, 0, sizeof(Message));
 
-	//receive initial login request
+
+    //receive initial login request
 	if (networkReceive(client_socket, &buffer) == 0)
 	{
 		if (buffer.header.type == LRQ)
