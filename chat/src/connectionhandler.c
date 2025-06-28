@@ -45,7 +45,7 @@ static int createPassiveSocket(in_port_t port)
         return -1;
     }
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return fd;
 }
 
