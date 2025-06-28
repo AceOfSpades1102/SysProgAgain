@@ -74,16 +74,14 @@ int connectionHandler(in_port_t port)
 
 		debugPrint("Listening socket descriptor: %d", fd);
 
-		*client_sock = accept(fd, (struct sockaddr *)&client_addr, &client_len);
-
-		if (*client_sock == -1)
+		*client_sock = accept(fd, (struct sockaddr *)&client_addr, &client_len);        if (*client_sock == -1)
         {
             errnoPrint("couldn't accept incoming connection Σ(x_x;)!");
             free(client_sock);
             continue;
         }
 
-		infoPrint("New connection from fd:%d \n", client_sock);
+		infoPrint("New connection from fd:%d \n", *client_sock);
 
 		//TODONE: add connection to user list and start client thread
 		pthread_t tid;
