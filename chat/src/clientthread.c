@@ -106,13 +106,28 @@ int handleLRQ(Message *buffer, int client_socket)
 
 }
 
-int sendLRE()
+int sendLRE(int client_socket, uint8_t code, const char* serverName)
 {
-	//send stuff
-	//if sending stuff didn't work return fail
-	//else return success
-	return 1;
-
+	Message response;
+	memset(&response, 0, sizeof(Message));
+	
+	// Set header
+	response.header.type = LRE;  // Login Response type
+	response.header.length = sizeof(uint32_t) + sizeof(uint8_t) + strlen(serverName);
+	
+	// Set body
+	response.body.login_response.magic = htonl(MAGIC_LRE);
+	response.body.login_response.code = code;
+	strncpy(response.body.login_response.serverName, serverName, NAME_MAX - 1);
+	response.body.login_response.serverName[NAME_MAX - 1] = '\0';
+	
+	// Send the response
+	if (networkSend(client_socket, &response) == -1) {
+		errnoPrint("Failed to send login response");
+		return 1; // Return 1 on failure
+	}
+	
+	return 0; // Return 0 on success
 }
 
 
