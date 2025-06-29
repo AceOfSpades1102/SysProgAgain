@@ -212,6 +212,8 @@ int sendUserRemoved(int client_socket, char *username, uint8_t code)
 //building the Useradded Message for Login
 void buildUserAddMessage(Message *message, const char *username)
 {
+
+	debugPrint("bueilding user added message");
 	size_t name_length = strlen(username);
     if (name_length < 1 || name_length > MAX_NAME) {
         errnoPrint("prepareUserAddedMessage: Invalid client_name length: %zu", name_length);
@@ -232,6 +234,7 @@ void buildUserAddMessage(Message *message, const char *username)
 
 void notify_new_user_callback(User *existing_user, void *context)
 {
+	debugPrint("callback");
     if (!existing_user || !context) {
         return;
     }
