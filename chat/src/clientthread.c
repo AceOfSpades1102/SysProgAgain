@@ -23,12 +23,12 @@
 
 //Message predefs
 const char *serverName = "ChatServer";
-const char *pauseMsg = "Broadcast paused (　ﾟﾛﾟ)!!";
+const char *pauseMsg = "Broadcast paused (　 Д )　* *!";
 const char *resumeMsg = "Broadcast resumed (ﾉ>ω<)ﾉ :｡･:*:･ﾟ’★,｡･:*:･ﾟ’☆";
-const char *invalidCmdMsg = "Invalid command (´･ｪ･｀)";
+const char *invalidCmdMsg = "Invalid command (ToT)";
 const char *alreadyPausedMsg = "Broadcast already paused ( ´∀｀ )b";
 const char *alreadyRunningMsg = "Broadcast already running ( ´∀｀ )b";
-const char *noPermissionMsg = "You do not have permission to perform this action ( ・－・)";
+const char *noPermissionMsg = "You do not have permission to perform this action ( *-*)";
 const char *emptyString = "";
 const char *userNotFoundMsg = "User not found (  -_・)?";
 const char *noKickingAdminMsg = "You cannot kick an admin ！Σ(x_x;)!";
@@ -142,6 +142,76 @@ int sendLRE(int client_socket, uint8_t code, const char* serverName)
 	return 0; // Return 0 on success
 }
 
+int handleAdminCommand(int client_socket, const char* username, const char* command)
+{
+	debugPrint("Processing admin command from %s: %s", username, command);
+	
+	// Check if user is admin
+	if (strcmp(username, "Admin") != 0) {
+		debugPrint("User %s attempted admin command but is not admin", username);
+		uint64_t timestamp = (uint64_t)time(NULL);
+		sendServer2Client(client_socket, "Server", timestamp, noPermissionMsg);
+		return 0; // Not an error, just not authorized
+	}
+	
+	// Parse command
+	if (strncmp(command, "/kick ", 6) == 0) {
+		// Extract target username
+		const char* target_name = command + 6; // Skip "/kick "
+		
+		debugPrint("Admin %s attempting to kick user: %s", username, target_name);
+		
+		// Find target user
+		User* target_user = searchUser(target_name);
+		if (target_user == NULL) {
+			debugPrint("Kick target user %s not found", target_name);
+			uint64_t timestamp = (uint64_t)time(NULL);
+			sendServer2Client(client_socket, "Server", timestamp, userNotFoundMsg);
+			return 0;
+		}
+		
+		// Block Admin kick
+		if (strcmp(target_name, "Admin") == 0) {
+			debugPrint("Admin attempted to kick another admin");
+			uint64_t timestamp = (uint64_t)time(NULL);
+			sendServer2Client(client_socket, "Server", timestamp, noKickingAdminMsg);
+			return 0;
+		}
+		
+		// Send kick notification to target user
+		uint64_t timestamp = (uint64_t)time(NULL);
+		sendServer2Client(target_user->sock, "Server", timestamp, "You have been kicked from the server Σ(x_x;)!");
+		
+		// Close target user's connection ->>cleanup
+		debugPrint("Kicking user %s (socket %d)", target_name, target_user->sock);
+		close(target_user->sock);
+		
+		sendServer2Client(client_socket, "Server", timestamp, "User successfully kicked ( ´∀｀ )b");
+		
+		return 0;
+		
+	} else if (strcmp(command, "/pause") == 0) {
+		debugPrint("Admin %s pausing broadcast", username);
+		pauseBroadcasting();
+		uint64_t timestamp = (uint64_t)time(NULL);
+		sendServer2Client(client_socket, "Server", timestamp, pauseMsg);
+		return 0;
+		
+	} else if (strcmp(command, "/resume") == 0) {
+		debugPrint("Admin %s resuming broadcast", username);
+		resumeBroadcasting();
+		uint64_t timestamp = (uint64_t)time(NULL);
+		sendServer2Client(client_socket, "Server", timestamp, resumeMsg);
+		return 0;
+		
+	} else {
+		debugPrint("Unknown admin command: %s", command);
+		uint64_t timestamp = (uint64_t)time(NULL);
+		sendServer2Client(client_socket, "Server", timestamp, invalidCmdMsg);
+		return 0;
+	}
+}
+
 
 void *clientthread(void *arg)
 {
@@ -150,7 +220,6 @@ void *clientthread(void *arg)
 
 	debugPrint("Client thread started (ﾉ>ω<)ﾉ (socket: %d)", client_socket);
 
-	//TODO: everything here lolz
 
     Message buffer;
 	//struct Message *buffer = malloc(sizeof(Message));
@@ -211,16 +280,25 @@ void *clientthread(void *arg)
 								memcpy(message_text, buffer.body.client_to_server.text, text_length);
 								message_text[text_length] = '\0';
 								
-								// Get current timestamp
-								uint64_t timestamp = (uint64_t)time(NULL);
-								
-								// Broadcast the message using broadcast agent
-								debugPrint("Broadcasting message from %s: %s", username, message_text);
-								
-								if (broadcastMessage(username, message_text, timestamp) != 0) {
-									debugPrint("Failed to broadcast message from client %d", client_socket);
+								// Check if this is an admin command
+								if (message_text[0] == '/') {
+									if (handleAdminCommand(client_socket, username, message_text) != 0) {
+										debugPrint("Failed to handle admin command from %s: %s", username, message_text);
+									}
 								} else {
-									debugPrint("Message successfully queued for broadcast");
+									// Regular chat message - broadcast it
+									uint64_t timestamp = (uint64_t)time(NULL);
+									
+									debugPrint("Broadcasting message from %s: %s", username, message_text);
+									
+									// Use timeout to avoid blocking when queue is full (especially when paused)
+									if (broadcastMessage(username, message_text, timestamp) != 0) {
+										debugPrint("Failed to broadcast message from client %d (queue timeout or full)", client_socket);
+										// Send error message back to client
+										sendServer2Client(client_socket, "Server", timestamp, "Message failed to send - server busy or paused");
+									} else {
+										debugPrint("Message successfully queued for broadcast");
+									}
 								}
 								break;
 							case UAD:
