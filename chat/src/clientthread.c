@@ -253,9 +253,9 @@ void sendUserList(int socket, char *username)
 {
 	debugPrint("UserList");
 
-	//iterate_users(notify_new_user_callback, &socket);
+	forEachUser(notify_new_user_callback, &socket);
 
-    User *current = userFront;
+    /*User *current = userFront;
     while(current)
     {
 		if(strcmp(current->name, username) == 0)
@@ -285,7 +285,7 @@ void sendUserList(int socket, char *username)
 
 		networkSend(socket, &userAdded);
         current = current->next;
-    }
+    }*/
 
 
 }
