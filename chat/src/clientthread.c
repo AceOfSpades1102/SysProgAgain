@@ -220,7 +220,7 @@ void buildUserAddMessage(Message *message, const char *username)
         return;
     }
 
-	memset (&message, 0, sizeof(Message));
+	memset (message, 0, sizeof(Message));
 
 	//set header
 	message->header.type = UAD;  // Login Response type
