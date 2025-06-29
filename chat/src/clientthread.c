@@ -176,6 +176,7 @@ int sendUserAdded(int client_socket, char *username)
 
 int sendUserRemoved(int client_socket, char *username)
 {
+	debugPrint("send message removing User");
 	Message userRemoved;
 	memset (&userRemoved, 0, sizeof(Message));
 
@@ -185,7 +186,6 @@ int sendUserRemoved(int client_socket, char *username)
 
 	// Get current timestamp
 	uint64_t timestamp = (uint64_t)time(NULL);
-	debugPrint("timestamp: %ld", timestamp);
 
 	//set body
 	userRemoved.body.user_added.timestamp = htonll(timestamp);
@@ -311,9 +311,10 @@ void *clientthread(void *arg)
 				}
 				
 				// Clean up: remove user from list when connection ends
+				sendUserRemoved(client_socket, username);
 				debugPrint("Removing user '%s' from user list", username);
 				removeUser(current_thread);
-				sendUserRemoved(client_socket, username);
+				
 
 				//TODO send remove user message
 
