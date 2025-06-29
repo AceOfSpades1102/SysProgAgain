@@ -143,7 +143,7 @@ int sendLRE(int client_socket, uint8_t code, const char* serverName)
 	return 0; // Return 0 on success
 }
 
-int sendUserAdded(int client_socket, char *username, uint64_t timestamp)
+int sendUserAdded(int client_socket, char *username)
 {
 	Message userAdded;
 	memset (&userAdded, 0, sizeof(Message));
@@ -153,7 +153,7 @@ int sendUserAdded(int client_socket, char *username, uint64_t timestamp)
 	userAdded.header.length = sizeof(uint64_t) + strlen(username);
 
 	// Get current timestamp
-	//uint64_t timestamp = (uint64_t)time(NULL);
+	uint64_t timestamp = (uint64_t)time(NULL);
 	debugPrint("timestamp: %ld", timestamp);
 
 	//set body
@@ -170,13 +170,39 @@ int sendUserAdded(int client_socket, char *username, uint64_t timestamp)
 		networkSend(current->sock, &userAdded);
         current = current->next;
     }
-	
-
-
 
 	return 0; //replace with actual return
-	
+}
 
+int sendUserRemoved(int client_socket, char *username)
+{
+	Message userRemoved;
+	memset (&userRemoved, 0, sizeof(Message));
+
+	//set header
+	userRemoved.header.type = UAD;  // Login Response type
+	userRemoved.header.length = sizeof(uint64_t) + strlen(username);
+
+	// Get current timestamp
+	uint64_t timestamp = (uint64_t)time(NULL);
+	debugPrint("timestamp: %ld", timestamp);
+
+	//set body
+	userRemoved.body.user_added.timestamp = htonll(timestamp);
+	strncpy(userRemoved.body.user_added.name, username, NAME_MAX - 1);
+	userRemoved.body.user_added.name[NAME_MAX - 1] = '\0';
+
+	//broadcast this bitch
+	//broadcastServer2client
+	User *current = userFront;
+    while(current)
+    {
+        //printUser(current);
+		networkSend(current->sock, &userRemoved);
+        current = current->next;
+    }
+
+	return 0; //replace with actual return
 }
 
 
@@ -227,7 +253,7 @@ void *clientthread(void *arg)
 
 				//TODO Add User to List and do that message
 
-				sendUserAdded(client_socket, username, timestamp);
+				sendUserAdded(client_socket, username);
 
 				
 				
@@ -287,8 +313,10 @@ void *clientthread(void *arg)
 				// Clean up: remove user from list when connection ends
 				debugPrint("Removing user '%s' from user list", username);
 				removeUser(current_thread);
+				sendUserRemoved(client_socket, username);
 
 				//TODO send remove user message
+
 
 
 			} else {
