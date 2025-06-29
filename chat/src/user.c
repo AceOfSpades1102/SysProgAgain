@@ -21,6 +21,8 @@ const char *allocError =("Something went wrong with allocating Memory (・_・)?
 
 //TODO: Implement the functions declared in user.h
 
+
+
 int createUser(int sock, pthread_t thread,const char *name)
 {
     pthread_mutex_lock(&userLock);
@@ -52,6 +54,10 @@ int createUser(int sock, pthread_t thread,const char *name)
     debugPrint("userFront is now: %p\n", (void *)userFront);
     
     pthread_mutex_unlock(&userLock);
+
+    
+
+
     //printUser(newUser);
     return EXIT_SUCCESS;
 }

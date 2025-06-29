@@ -22,6 +22,8 @@
 
 #define BUFFER_SIZE 2048 // Maximale Nachrichtengröße
 
+static pthread_mutex_t userLock = PTHREAD_MUTEX_INITIALIZER;
+
 //Message predefs
 const char *serverName = "ChatServer";
 const char *pauseMsg = "Broadcast paused (　ﾟﾛﾟ)!!";
@@ -206,6 +208,44 @@ int sendUserRemoved(int client_socket, char *username, uint8_t code)
 	return 0; //replace with actual return
 }
 
+int sendUserList(int socket, char *username)
+{
+	pthread_mutex_lock(&userLock);
+
+    User *current = userFront;
+    while(current)
+    {
+		if(strcmp(current->name, username) == 0)
+		{
+			current = current->next;
+		}
+
+		Message userAdded;
+		memset (&userAdded, 0, sizeof(Message));
+
+		//set header
+		userAdded.header.type = UAD;  // Login Response type
+		userAdded.header.length = sizeof(uint64_t) + strlen(username);
+
+		// Get current timestamp
+		uint64_t timestamp = 0;
+
+		//set body
+		userAdded.body.user_added.timestamp = htonll(timestamp);
+		strncpy(userAdded.body.user_added.name, current->name, NAME_MAX - 1);
+		userAdded.body.user_added.name[NAME_MAX - 1] = '\0';
+
+
+
+		networkSend(socket, &userAdded);
+        current = current->next;
+    }
+
+	pthread_mutex_unlock(&userLock);
+
+	return 0; //retuen smth else maybess
+}
+
 
 void *clientthread(void *arg)
 {
@@ -255,6 +295,7 @@ void *clientthread(void *arg)
 				//TODO Add User to List and do that message
 
 				sendUserAdded(client_socket, username);
+				sendUserList(client_socket, username);
 
 				
 				
