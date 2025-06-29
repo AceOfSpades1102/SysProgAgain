@@ -142,6 +142,40 @@ int sendLRE(int client_socket, uint8_t code, const char* serverName)
 	return 0; // Return 0 on success
 }
 
+int sendUserAdded(int client_socket, char username)
+{
+	Message userAdded;
+	memset (&userAdded, 0, sizeof(Message));
+
+	//set header
+	userAdded.header.type = UAD;  // Login Response type
+	userAdded.header.length = sizeof(uint64_t) + strlen(username);
+
+	// Get current timestamp
+	uint64_t timestamp = (uint64_t)time(NULL);
+
+	//set body
+	userAdded.body.user_added.timestamp = timestamp;
+	userAdded.body.user_added.name[NAME_MAX] = username;
+
+	//broadcast this bitch
+	//broadcastServer2client
+	User *current = userFront;
+    while(current)
+    {
+        //printUser(current);
+		networkSend(current->sock, &userAdded);
+        current = current->next;
+    }
+	
+
+
+
+	return 0; //replace with actual return
+	
+
+}
+
 
 void *clientthread(void *arg)
 {
@@ -185,6 +219,12 @@ void *clientthread(void *arg)
 				}
 				
 				debugPrint("User '%s' created and added to user list", username);
+
+				//TODO Add User to List and do that message
+
+				sendUserAdded(client_socket, username);
+
+				
 				
 				// Keep connection alive and handle further messages
 				debugPrint("Client thread will continue listening for messages...");
@@ -242,6 +282,10 @@ void *clientthread(void *arg)
 				// Clean up: remove user from list when connection ends
 				debugPrint("Removing user '%s' from user list", username);
 				removeUser(current_thread);
+
+				//TODO send remove user message
+
+
 			} else {
 				debugPrint("Login failed for client %d", client_socket);
 			}
