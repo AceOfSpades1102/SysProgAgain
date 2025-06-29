@@ -38,11 +38,11 @@ static ssize_t handleRecvReturn(ssize_t tmp, int fd, ssize_t expected_len){
 int recieveHeader(int fd, Message *buffer)
 {
     //recieve type
-    debugPrint("Test");
+    debugPrint("Test recieve header entered");
     ssize_t tmp = recv(fd, &(buffer->header.type), sizeof(buffer->header.type), MSG_WAITALL);
     debugPrint("type: %ld", (long)tmp);
     tmp = handleRecvReturn(tmp, fd, sizeof(buffer->header.type));
-    debugPrint("type: %ld", (long)tmp);
+    debugPrint("type after test: %d", buffer->header.type);
 
 
     if(tmp != RECV_SUCCESS)
@@ -114,6 +114,7 @@ int recieveMessage(int fd, Message *buffer)
             return RECV_SUCCESS;
         }
         case C2S:{
+            debugPrint("recieving C2S Message");
             ssize_t tmp = recv(fd, &buffer->body.client_to_server, buffer->header.length, MSG_WAITALL);
             tmp = handleRecvReturn(tmp, fd, buffer->header.length);
             if (tmp != RECV_SUCCESS){
@@ -128,11 +129,8 @@ int recieveMessage(int fd, Message *buffer)
 
 int networkReceive(int fd, Message *buffer)
 {
-    int tmp = recieveHeader(fd, buffer);
-    debugPrint("Header type: %d", buffer->header.type);
-    debugPrint("Header length: %d", buffer->header.length);
     
-    debugPrint("header is: %d", tmp);
+    int tmp = recieveHeader(fd, buffer);
     debugPrint("Header type: %d", buffer->header.type);
     debugPrint("Header length: %d", buffer->header.length);
 

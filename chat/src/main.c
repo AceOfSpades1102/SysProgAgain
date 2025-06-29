@@ -13,6 +13,9 @@ int main(int argc, char **argv)
 
 	//TODONE: evaluate command line arguments
 
+	debugEnable();
+	infoPrint("Debug mode enabled!");
+
 	int c = 0;
 	int port = 8888;
 	while((c = getopt(argc, argv, "p:dh")) != -1)
@@ -49,8 +52,8 @@ int main(int argc, char **argv)
 			}
 			case 'd':
 			{
-				debugEnable();
-				infoPrint("Debug mode enabled!");
+				debugDisable();
+				infoPrint("Debug mode disabled!");
 				break;
 			}
 			case 'h':
