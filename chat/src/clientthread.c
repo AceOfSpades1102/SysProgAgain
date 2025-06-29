@@ -174,23 +174,24 @@ int sendUserAdded(int client_socket, char *username)
 	return 0; //replace with actual return
 }
 
-int sendUserRemoved(int client_socket, char *username)
+int sendUserRemoved(int client_socket, char *username, uint8_t code)
 {
 	debugPrint("send message removing User");
 	Message userRemoved;
 	memset (&userRemoved, 0, sizeof(Message));
 
 	//set header
-	userRemoved.header.type = UAD;  // Login Response type
-	userRemoved.header.length = sizeof(uint64_t) + strlen(username);
+	userRemoved.header.type = URM;  // Login Response type
+	userRemoved.header.length = sizeof(uint64_t) + strlen(username) + sizeof(uint8_t);
 
 	// Get current timestamp
 	uint64_t timestamp = (uint64_t)time(NULL);
 
 	//set body
-	userRemoved.body.user_added.timestamp = htonll(timestamp);
-	strncpy(userRemoved.body.user_added.name, username, NAME_MAX - 1);
-	userRemoved.body.user_added.name[NAME_MAX - 1] = '\0';
+	userRemoved.body.user_removed.timestamp = htonll(timestamp);
+	strncpy(userRemoved.body.user_removed.name, username, NAME_MAX - 1);
+	userRemoved.body.user_removed.code = code;
+	userRemoved.body.user_removed.name[NAME_MAX - 1] = '\0';
 
 	//broadcast this bitch
 	//broadcastServer2client
@@ -311,7 +312,7 @@ void *clientthread(void *arg)
 				}
 				
 				// Clean up: remove user from list when connection ends
-				sendUserRemoved(client_socket, username);
+				sendUserRemoved(client_socket, username, CONN_CLOSED_CLIENT);
 				debugPrint("Removing user '%s' from user list", username);
 				removeUser(current_thread);
 				
