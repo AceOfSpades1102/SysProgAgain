@@ -221,9 +221,12 @@ int sendUserList(int socket, char *username)
 			current = current->next;
 		}
 
+		debugPrint("UserList2");
+
 		Message userAdded;
 		memset (&userAdded, 0, sizeof(Message));
 
+		debugPrint("UserList3");
 		//set header
 		userAdded.header.type = UAD;  // Login Response type
 		userAdded.header.length = sizeof(uint64_t) + strlen(username);
@@ -236,7 +239,7 @@ int sendUserList(int socket, char *username)
 		strncpy(userAdded.body.user_added.name, current->name, NAME_MAX - 1);
 		userAdded.body.user_added.name[NAME_MAX - 1] = '\0';
 
-
+		debugPrint("UserList4");
 
 		networkSend(socket, &userAdded);
         current = current->next;
