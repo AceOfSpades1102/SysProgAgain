@@ -209,9 +209,51 @@ int sendUserRemoved(int client_socket, char *username, uint8_t code)
 	return 0; //replace with actual return
 }
 
-int sendUserList(int socket, char *username)
+//building the Useradded Message for Login
+void buildUserAddMessage(Message *message, const char *username)
+{
+	memset (&message, 0, sizeof(Message));
+
+	//set header
+	message->header.type = UAD;  // Login Response type
+	message->header.length = sizeof(uint64_t) + strlen(username);
+
+	//set body
+	message->body.user_added.timestamp = htonll(0);
+	memcpy(message->body.user_added.name, username, strlen(username));
+
+}
+
+void notify_new_user_callback(User *existing_user, void *context)
+{
+    if (!existing_user || !context) {
+        return;
+    }
+
+    // Cast context back to the new user's socket
+    int *new_user_sock = (int *)context;
+
+    if (existing_user->sock == *new_user_sock) {
+        return; // existing user is new user
+    }
+
+    // Prepare
+    Message message;
+    buildUserAddMessage(&message, existing_user->name);
+
+    // Send the message to the new user's socket
+    if (networkSend(*new_user_sock, &message) == -1) {
+        errorPrint("Failed to notify new user about existing user %s (fd=%d).", existing_user->name, *new_user_sock);
+    } else {
+        debugPrint("Notified new user about existing user %s (fd=%d).", existing_user->name, *new_user_sock);
+    }
+}
+
+void sendUserList(int socket, char *username)
 {
 	debugPrint("UserList");
+
+	//iterate_users(notify_new_user_callback, &socket);
 
     User *current = userFront;
     while(current)
@@ -246,8 +288,9 @@ int sendUserList(int socket, char *username)
     }
 
 
-	return 0; //retuen smth else maybess
 }
+
+
 
 
 void *clientthread(void *arg)
