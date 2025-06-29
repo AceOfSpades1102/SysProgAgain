@@ -147,6 +147,7 @@ int sendLRE(int client_socket, uint8_t code, const char* serverName)
 
 int sendUserAdded(int client_socket, char *username)
 {
+	debugPrint("sending message adding User");
 	Message userAdded;
 	memset (&userAdded, 0, sizeof(Message));
 
@@ -178,7 +179,7 @@ int sendUserAdded(int client_socket, char *username)
 
 int sendUserRemoved(int client_socket, char *username, uint8_t code)
 {
-	debugPrint("send message removing User");
+	debugPrint("sending message removing User");
 	Message userRemoved;
 	memset (&userRemoved, 0, sizeof(Message));
 
@@ -210,6 +211,7 @@ int sendUserRemoved(int client_socket, char *username, uint8_t code)
 
 int sendUserList(int socket, char *username)
 {
+	debugPrint("UserList")
 	pthread_mutex_lock(&userLock);
 
     User *current = userFront;
