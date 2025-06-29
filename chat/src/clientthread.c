@@ -14,6 +14,7 @@
 #include "util.h"
 #include "network.h"
 #include "def.h"
+#include "broadcastagent.h"
 
 #include <time.h>
 #include <netinet/in.h>
@@ -166,9 +167,24 @@ void *clientthread(void *arg)
 			{
 				debugPrint("Login successful");
 				
-				// TODO: Create user and add to user list
-				// User *user = createUser(name, client_socket);
-				// addUser(user);
+				// Extract username from login request for user creation
+				char username[NAME_MAX + 1];
+				size_t name_length = buffer.header.length;
+				if (name_length > NAME_MAX) {
+					name_length = NAME_MAX;
+				}
+				memcpy(username, buffer.body.login_request.name, name_length);
+				username[name_length] = '\0';
+				
+				// Create user and add to user list
+				pthread_t current_thread = pthread_self();
+				if (createUser(client_socket, current_thread, username) != 0) {
+					errorPrint("Failed to create user for client %d", client_socket);
+					close(client_socket);
+					return NULL;
+				}
+				
+				debugPrint("User '%s' created and added to user list", username);
 				
 				// Keep connection alive and handle further messages
 				debugPrint("Client thread will continue listening for messages...");
@@ -184,7 +200,28 @@ void *clientthread(void *arg)
 							case C2S:
 								// Handle client-to-server chat message
 								debugPrint("Received C2S message from client %d", client_socket);
-								// TODO: Broadcast to other clients
+								
+								// Extract message text from the C2S message
+								char message_text[MSG_MAX + 1];
+								size_t text_length = buffer.header.length;
+								if (text_length > MSG_MAX) {
+									text_length = MSG_MAX;
+								}
+								
+								memcpy(message_text, buffer.body.client_to_server.text, text_length);
+								message_text[text_length] = '\0';
+								
+								// Get current timestamp
+								uint64_t timestamp = (uint64_t)time(NULL);
+								
+								// Broadcast the message using broadcast agent
+								debugPrint("Broadcasting message from %s: %s", username, message_text);
+								
+								if (broadcastMessage(username, message_text, timestamp) != 0) {
+									debugPrint("Failed to broadcast message from client %d", client_socket);
+								} else {
+									debugPrint("Message successfully queued for broadcast");
+								}
 								break;
 							case UAD:
 								// Handle user admin command
@@ -201,6 +238,10 @@ void *clientthread(void *arg)
 						break;
 					}
 				}
+				
+				// Clean up: remove user from list when connection ends
+				debugPrint("Removing user '%s' from user list", username);
+				removeUser(current_thread);
 			} else {
 				debugPrint("Login failed for client %d", client_socket);
 			}

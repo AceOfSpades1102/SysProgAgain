@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <arpa/inet.h> // For htons, htonl, ntohs, ntohl
+#include <endian.h>    // For htobe64, be64toh
 #include <stdlib.h>
 #include <time.h>
 #include "network.h"
@@ -210,19 +211,19 @@ int broadcastServer2Client(const char *orig_sender,const char *text, uint64_t ti
 
 int sendServer2Client(int receiver_client, const char *original_sender, uint64_t timestamp, const char *text)
 {
-    debugPrint("sendServer2Client: Sending Server2Client to user %s. ( ´∀｀ )b", receiver_client);
+    debugPrint("sendServer2Client: Sending Server2Client to client %d. ( ´∀｀ )b", receiver_client);
     
     Message msg;
     prepareServer2ClientMessage(&msg, original_sender, timestamp, text);
 
-    debugPrint("Sending Server2Client message to user %s (fd=%d)", original_sender, receiver_client);
+    debugPrint("Sending Server2Client message from %s to client (fd=%d)", original_sender, receiver_client);
     debugPrint("Message Debug: type=%d, length=%u, text='%s'", msg.header.type, msg.header.length, msg.body.server_to_client.text);
    
     if(networkSend(receiver_client, &msg) == -1) {
-        debugPrint("Failed to send Server2Client to user %s (fd=%d). Σ(x_x;)", original_sender, receiver_client);
+        debugPrint("Failed to send Server2Client from %s to client (fd=%d). Σ(x_x;)", original_sender, receiver_client);
         return FAILED;
     } else {
-        debugPrint("Server2Client sent to user %s (fd=%d). ( ´∀｀ )b", original_sender, receiver_client);
+        debugPrint("Server2Client sent from %s to client (fd=%d). ( ´∀｀ )b", original_sender, receiver_client);
         return SUCCESS;
     }
     return SUCCESS;
@@ -251,8 +252,10 @@ void prepareServer2ClientMessage(Message *msg, const char *original_sender, uint
     memset(msg, 0, sizeof(Message));
 
     msg->header.type = S2C; // Set message type to ServerToClient
-    msg->header.length = TIMESTAMP_LEN + NAME_MAX + 1 + MSG_MAX; // Set length to include timestamp, originalSender, and text
-    msg->body.server_to_client.timestamp = htonl(timestamp); 
+    msg->header.length = TIMESTAMP_LEN + NAME_MAX + text_len; // Fixed size: timestamp + full name field + text
+    
+    // Convert 64-bit timestamp to network byte order
+    msg->body.server_to_client.timestamp = htobe64(timestamp); 
 
     memset(msg->body.server_to_client.originalSender, 0, NAME_MAX + 1); // Clear originalSender
     memcpy(msg->body.server_to_client.originalSender, original_sender, sender_len);
@@ -261,7 +264,7 @@ void prepareServer2ClientMessage(Message *msg, const char *original_sender, uint
     memcpy(msg->body.server_to_client.text, text, text_len);
 
     debugPrint("prepareServer2ClientMessage: Prepared message for original_sender='%s', timestamp=%lu, text='%s'", 
-                msg->body.server_to_client.originalSender, ntohl(msg->body.server_to_client.timestamp), msg->body.server_to_client.text);
+                msg->body.server_to_client.originalSender, (unsigned long)timestamp, msg->body.server_to_client.text);
 }
 
 void broadcast_server2client_callback(User *user, void *context)
