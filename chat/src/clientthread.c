@@ -211,8 +211,7 @@ int sendUserRemoved(int client_socket, char *username, uint8_t code)
 
 int sendUserList(int socket, char *username)
 {
-	debugPrint("UserList")
-	pthread_mutex_lock(&userLock);
+	debugPrint("UserList");
 
     User *current = userFront;
     while(current)
@@ -243,7 +242,6 @@ int sendUserList(int socket, char *username)
         current = current->next;
     }
 
-	pthread_mutex_unlock(&userLock);
 
 	return 0; //retuen smth else maybess
 }
