@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <errno.h>
+#include <time.h>
 #include "clientthread.h"
 #include "user.h"
 #include "util.h"
@@ -142,7 +143,7 @@ int sendLRE(int client_socket, uint8_t code, const char* serverName)
 	return 0; // Return 0 on success
 }
 
-int sendUserAdded(int client_socket, char username)
+int sendUserAdded(int client_socket, char *username, uint64_t timestamp)
 {
 	Message userAdded;
 	memset (&userAdded, 0, sizeof(Message));
@@ -152,11 +153,13 @@ int sendUserAdded(int client_socket, char username)
 	userAdded.header.length = sizeof(uint64_t) + strlen(username);
 
 	// Get current timestamp
-	uint64_t timestamp = (uint64_t)time(NULL);
+	//uint64_t timestamp = (uint64_t)time(NULL);
+	debugPrint("timestamp: %ld", timestamp);
 
 	//set body
-	userAdded.body.user_added.timestamp = timestamp;
-	userAdded.body.user_added.name[NAME_MAX] = username;
+	userAdded.body.user_added.timestamp = htonll(timestamp);
+	strncpy(userAdded.body.user_added.name, username, NAME_MAX - 1);
+	userAdded.body.user_added.name[NAME_MAX - 1] = '\0';
 
 	//broadcast this bitch
 	//broadcastServer2client
@@ -181,6 +184,8 @@ void *clientthread(void *arg)
 {
 	int client_socket = *(int *)arg;
 	free(arg);
+
+	uint64_t timestamp = (uint64_t)time(NULL);
 
 	debugPrint("Client thread started (ﾉ>ω<)ﾉ (socket: %d)", client_socket);
 
@@ -222,7 +227,7 @@ void *clientthread(void *arg)
 
 				//TODO Add User to List and do that message
 
-				sendUserAdded(client_socket, username);
+				sendUserAdded(client_socket, username, timestamp);
 
 				
 				
