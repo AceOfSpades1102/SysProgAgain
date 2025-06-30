@@ -75,4 +75,6 @@ int sendServer2Client(int receiver_client, const char *original_sender, uint64_t
 void prepareServer2ClientMessage(Message *msg, const char *original_sender, uint64_t timestamp, const char *text);
 void broadcast_server2client_callback(User *user, void *context);
 
+uint64_t htonll(uint64_t value);
+
 #endif

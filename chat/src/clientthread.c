@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <errno.h>
+#include <time.h>
 #include "clientthread.h"
 #include "user.h"
 #include "util.h"
@@ -20,6 +21,8 @@
 #include <netinet/in.h>
 
 #define BUFFER_SIZE 2048 // Maximale Nachrichtengröße
+
+static pthread_mutex_t userLock = PTHREAD_MUTEX_INITIALIZER;
 
 //Message predefs
 const char *serverName = "ChatServer";
@@ -212,11 +215,169 @@ int handleAdminCommand(int client_socket, const char* username, const char* comm
 	}
 }
 
+int sendUserAdded(int client_socket, char *username)
+{
+	debugPrint("sending message adding User");
+	Message userAdded;
+	memset (&userAdded, 0, sizeof(Message));
+
+	//set header
+	userAdded.header.type = UAD;  // Login Response type
+	userAdded.header.length = sizeof(uint64_t) + strlen(username);
+
+	// Get current timestamp
+	uint64_t timestamp = (uint64_t)time(NULL);
+	debugPrint("timestamp: %ld", timestamp);
+
+	//set body
+	userAdded.body.user_added.timestamp = htonll(timestamp);
+	strncpy(userAdded.body.user_added.name, username, NAME_MAX - 1);
+	userAdded.body.user_added.name[NAME_MAX - 1] = '\0';
+
+	//broadcast this bitch
+	//broadcastServer2client
+	User *current = userFront;
+    while(current)
+    {
+        //printUser(current);
+		networkSend(current->sock, &userAdded);
+        current = current->next;
+    }
+
+	return 0; //replace with actual return
+}
+
+int sendUserRemoved(int client_socket, char *username, uint8_t code)
+{
+	debugPrint("sending message removing User");
+	Message userRemoved;
+	memset (&userRemoved, 0, sizeof(Message));
+
+	//set header
+	userRemoved.header.type = URM;  // Login Response type
+	userRemoved.header.length = sizeof(uint64_t) + strlen(username) + sizeof(uint8_t);
+
+	// Get current timestamp
+	uint64_t timestamp = (uint64_t)time(NULL);
+
+	//set body
+	userRemoved.body.user_removed.timestamp = htonll(timestamp);
+	strncpy(userRemoved.body.user_removed.name, username, NAME_MAX - 1);
+	userRemoved.body.user_removed.code = code;
+	userRemoved.body.user_removed.name[NAME_MAX - 1] = '\0';
+
+	//broadcast this bitch
+	//broadcastServer2client
+	User *current = userFront;
+    while(current)
+    {
+        //printUser(current);
+		networkSend(current->sock, &userRemoved);
+        current = current->next;
+    }
+
+	return 0; //replace with actual return
+}
+
+//building the Useradded Message for Login
+void buildUserAddMessage(Message *message, const char *username)
+{
+
+	debugPrint("bueilding user added message");
+	size_t name_length = strlen(username);
+    if (name_length < 1 || name_length > MAX_NAME) {
+        errnoPrint("prepareUserAddedMessage: Invalid client_name length: %zu", name_length);
+        return;
+    }
+
+	memset (message, 0, sizeof(Message));
+
+	//set header
+	message->header.type = UAD;  // Login Response type
+	message->header.length = sizeof(uint64_t) + strlen(username);
+
+	//set body
+	message->body.user_added.timestamp = htonll(0);
+	memcpy(message->body.user_added.name, username, strlen(username));
+
+}
+
+void notify_new_user_callback(User *existing_user, void *context)
+{
+	debugPrint("callback");
+    if (!existing_user || !context) {
+        return;
+    }
+
+    // Cast context back to the new user's socket
+    int *new_user_sock = (int *)context;
+
+    if (existing_user->sock == *new_user_sock) {
+        return; // existing user is new user
+    }
+
+    // Prepare
+    Message message;
+    buildUserAddMessage(&message, existing_user->name);
+
+    // Send the message to the new user's socket
+    if (networkSend(*new_user_sock, &message) == -1) {
+        errorPrint("Failed to notify new user about existing user %s (fd=%d).", existing_user->name, *new_user_sock);
+    } else {
+        debugPrint("Notified new user about existing user %s (fd=%d).", existing_user->name, *new_user_sock);
+    }
+}
+
+void sendUserList(int socket, char *username)
+{
+	debugPrint("UserList");
+
+	forEachUser(notify_new_user_callback, &socket);
+
+    /*User *current = userFront;
+    while(current)
+    {
+		if(strcmp(current->name, username) == 0)
+		{
+			current = current->next;
+		}
+
+		debugPrint("UserList2");
+
+		Message userAdded;
+		memset (&userAdded, 0, sizeof(Message));
+
+		debugPrint("UserList3");
+		//set header
+		userAdded.header.type = UAD;  // Login Response type
+		userAdded.header.length = sizeof(uint64_t) + strlen(username);
+
+		// Get current timestamp
+		uint64_t timestamp = 0;
+
+		//set body
+		userAdded.body.user_added.timestamp = htonll(timestamp);
+		strncpy(userAdded.body.user_added.name, current->name, NAME_MAX - 1);
+		userAdded.body.user_added.name[NAME_MAX - 1] = '\0';
+
+		debugPrint("UserList4");
+
+		networkSend(socket, &userAdded);
+        current = current->next;
+    }*/
+
+
+}
+
+
+
 
 void *clientthread(void *arg)
 {
 	int client_socket = *(int *)arg;
 	free(arg);
+
+	uint64_t timestamp = (uint64_t)time(NULL);
 
 	debugPrint("Client thread started (ﾉ>ω<)ﾉ (socket: %d)", client_socket);
 
@@ -254,6 +415,13 @@ void *clientthread(void *arg)
 				}
 				
 				debugPrint("User '%s' created and added to user list", username);
+
+				//TODO Add User to List and do that message
+
+				sendUserAdded(client_socket, username);
+				sendUserList(client_socket, username);
+
+				
 				
 				// Keep connection alive and handle further messages
 				debugPrint("Client thread will continue listening for messages...");
@@ -318,8 +486,15 @@ void *clientthread(void *arg)
 				}
 				
 				// Clean up: remove user from list when connection ends
+				sendUserRemoved(client_socket, username, CONN_CLOSED_CLIENT);
 				debugPrint("Removing user '%s' from user list", username);
 				removeUser(current_thread);
+				
+
+				//TODO send remove user message
+
+
+
 			} else {
 				debugPrint("Login failed for client %d", client_socket);
 			}

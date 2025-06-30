@@ -288,3 +288,13 @@ void broadcast_server2client_callback(User *user, void *context)
         debugPrint("Server2Client sent to user %s (fd=%d). ( ´∀｀ )b", user->name, user->sock);
     }
 }
+
+uint64_t htonll(uint64_t value)
+{
+    // Handle 64-bit network byte-order conversion
+    if (__BYTE_ORDER == __LITTLE_ENDIAN) {
+        return ((uint64_t)htonl(value & 0xFFFFFFFF) << 32) | htonl(value >> 32);
+    } else {
+        return value; 
+    }
+}
