@@ -5,5 +5,6 @@
 
 void *clientthread(void *arg);
 int sendLRE(int client_socket, uint8_t code, const char* serverName);
+int sendUserRemoved(char *username, uint8_t code);
 
 #endif

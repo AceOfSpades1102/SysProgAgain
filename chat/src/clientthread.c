@@ -212,6 +212,9 @@ int handleAdminCommand(int client_socket, const char* username, const char* comm
 		uint64_t timestamp = (uint64_t)time(NULL);
 		sendServer2Client(target_user->sock, "Server", timestamp, "You have been kicked from the server Σ(x_x;)!");
 		
+		// Sending user removed message
+		sendUserRemoved(target_name, 1);
+
 		// Close target user's connection ->>cleanup
 		debugPrint("Kicking user %s (socket %d)", target_name, target_user->sock);
 		close(target_user->sock);
@@ -242,7 +245,7 @@ int handleAdminCommand(int client_socket, const char* username, const char* comm
 	}
 }
 
-int sendUserAdded(int client_socket, char *username)
+int sendUserAdded(char *username)
 {
 	debugPrint("sending message adding User");
 	Message userAdded;
@@ -274,7 +277,7 @@ int sendUserAdded(int client_socket, char *username)
 	return 0; //replace with actual return
 }
 
-int sendUserRemoved(int client_socket, char *username, uint8_t code)
+int sendUserRemoved(char *username, uint8_t code)
 {
 	debugPrint("sending message removing User");
 	Message userRemoved;
@@ -355,7 +358,7 @@ void notify_new_user_callback(User *existing_user, void *context)
     }
 }
 
-void sendUserList(int socket, char *username)
+void sendUserList(int socket)
 {
 	debugPrint("UserList");
 
@@ -404,8 +407,6 @@ void *clientthread(void *arg)
 	int client_socket = *(int *)arg;
 	free(arg);
 
-	uint64_t timestamp = (uint64_t)time(NULL);
-
 	debugPrint("Client thread started (ﾉ>ω<)ﾉ (socket: %d)", client_socket);
 
 
@@ -445,8 +446,8 @@ void *clientthread(void *arg)
 
 				//TODO Add User to List and do that message
 
-				sendUserAdded(client_socket, username);
-				sendUserList(client_socket, username);
+				sendUserAdded(username);
+				sendUserList(client_socket);
 
 				
 				
@@ -513,7 +514,7 @@ void *clientthread(void *arg)
 				}
 				
 				// Clean up: remove user from list when connection ends
-				sendUserRemoved(client_socket, username, CONN_CLOSED_CLIENT);
+				sendUserRemoved(username, CONN_CLOSED_CLIENT);
 				debugPrint("Removing user '%s' from user list", username);
 				removeUser(current_thread);
 				
