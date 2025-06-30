@@ -237,6 +237,11 @@ int handleAdminCommand(int client_socket, const char* username, const char* comm
 		
 	} else if (strcmp(command, "/resume") == 0) {
 		debugPrint("Admin %s resuming broadcast", username);
+		if (!isBroadcastPaused()) {
+			uint64_t timestamp = (uint64_t)time(NULL);
+			sendServer2Client(client_socket, "Server", timestamp, alreadyRunningMsg);
+			return 0;
+		}
 		resumeBroadcasting();
 		uint64_t timestamp = (uint64_t)time(NULL);
 		sendServer2Client(client_socket, "Server", timestamp, resumeMsg);
