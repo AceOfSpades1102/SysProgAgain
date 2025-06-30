@@ -18,5 +18,6 @@ void broadcastAgentCleanup(void);
 int broadcastMessage(const char *sender, const char *text, uint64_t timestamp);
 void pauseBroadcasting();
 void resumeBroadcasting();
+int isBroadcastPaused(void);
 
 #endif

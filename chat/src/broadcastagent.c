@@ -169,3 +169,7 @@ void resumeBroadcasting() {
 		debugPrint("Broadcasting already running ( ´∀｀ )b \n");
 	}
 }
+
+int isBroadcastPaused(void) {
+    return is_paused;
+}

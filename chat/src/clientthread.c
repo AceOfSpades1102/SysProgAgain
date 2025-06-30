@@ -225,6 +225,11 @@ int handleAdminCommand(int client_socket, const char* username, const char* comm
 		
 	} else if (strcmp(command, "/pause") == 0) {
 		debugPrint("Admin %s pausing broadcast", username);
+		if (isBroadcastPaused()) {
+			uint64_t timestamp = (uint64_t)time(NULL);
+			sendServer2Client(client_socket, "Server", timestamp, alreadyPausedMsg);
+			return 0;
+		}
 		pauseBroadcasting();
 		uint64_t timestamp = (uint64_t)time(NULL);
 		sendServer2Client(client_socket, "Server", timestamp, pauseMsg);
