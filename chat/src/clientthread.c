@@ -497,8 +497,12 @@ void *clientthread(void *arg)
 									
 									debugPrint("Broadcasting message from %s: %s", username, message_text);
 									
-									// Use timeout to avoid blocking when queue is full (especially when paused)
-									if (broadcastMessage(username, message_text, timestamp) != 0) {
+									//Use timeout to avoid blocking when queue is full
+									int broadcast_result = broadcastMessage(username, message_text, timestamp);
+									if (broadcast_result == 2) {
+										debugPrint("Queue full while paused, sending error to client %d", client_socket);
+										sendServer2Client(client_socket, "Server", timestamp, fullQueueMsg);
+									} else if (broadcast_result != 0) {
 										debugPrint("Failed to broadcast message from client %d (queue timeout or full)", client_socket);
 										// Send error message back to client
 										sendServer2Client(client_socket, "Server", timestamp, "Message failed to send - server busy or paused");

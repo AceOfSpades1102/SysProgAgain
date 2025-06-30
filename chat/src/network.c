@@ -196,9 +196,9 @@ int broadcastServer2Client(const char *orig_sender,const char *text, uint64_t ti
     
     struct {
         uint64_t timestamp;
-        const char *orig_sender;
+        const char *original_sender;
         const char *text;
-    } context = { .timestamp = timestamp, .orig_sender = orig_sender, .text = text};
+    } context = { .timestamp = timestamp, .original_sender = orig_sender, .text = text};
 
     forEachUser(broadcast_server2client_callback, &context);
     debugPrint("broadcastServer2Client: Finished broadcasting Server2Client for user %s. ( ´∀｀ )b", orig_sender);

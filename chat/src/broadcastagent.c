@@ -124,6 +124,17 @@ int broadcastMessage(const char *sender, const char *text, uint64_t timestamp)
 	msg.text[TEXT_MAX - 1] = '\0'; // Ensure null termination
 	
 	msg.timestamp = timestamp;
+
+	//Check if paused and queue is full
+	if (is_paused) {
+		struct mq_attr attr;
+		if (mq_getattr(messageQueue, &attr) == 0) {
+			if (attr.mq_curmsgs >= attr.mq_maxmsg) {
+				debugPrint("broadcastMessage: Queue full while paused.");
+				return 2;
+			}
+		}
+	}
 	
 	//timeout handling
 	struct timespec ts;
@@ -139,7 +150,6 @@ int broadcastMessage(const char *sender, const char *text, uint64_t timestamp)
 			return EXIT_FAILURE;
 		} else {
 			errnoPrint("broadcastMessage: Failed to send message Σ(x_x;)!");
-			//sendServer2Client(getUserByName(sender)->socket, "Broadcasting failed: Queue full");
 			return EXIT_FAILURE;
 		}
 	}
