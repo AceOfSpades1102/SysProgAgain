@@ -2,14 +2,34 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <string.h>
+#include <signal.h>
 #include "connectionhandler.h"
 #include "util.h"
 #include "broadcastagent.h"
+
+// Global flag for cleanup
+static volatile int server_running = 1;
+
+// Signal handler for graceful shutdown
+void signal_handler(int signum) {
+    infoPrint("Received signal %d, shutting down server gracefully...", signum);
+    server_running = 0;
+    
+    // Perform cleanup
+    broadcastAgentCleanup();
+    
+    exit(EXIT_SUCCESS);
+}
 
 int main(int argc, char **argv)
 {
 	utilInit(argv[0]);
 	infoPrint("Chat server, group 23 :)");	//TODONE: group number is 23
+
+	// Register signal handlers for graceful shutdown
+	signal(SIGINT, signal_handler);   // Ctrl+C
+	signal(SIGTERM, signal_handler);  // kill command
+	signal(SIGQUIT, signal_handler);  // Ctrl+\
 
 	//TODONE: evaluate command line arguments
 
@@ -76,9 +96,15 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
+	// Set up signal handler for graceful shutdown
+	signal(SIGINT, signal_handler);
+	signal(SIGTERM, signal_handler);
+
 	//TODODONE: use port specified via command line
 	const int result = connectionHandler((in_port_t)port);
 
-	//TODO: perform cleanup, if required by your implementation
+	//TODONE: Perform cleanup before exit
+	broadcastAgentCleanup();
+	
 	return result != -1 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
