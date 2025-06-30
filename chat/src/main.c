@@ -29,7 +29,7 @@ int main(int argc, char **argv)
 	// Register signal handlers for graceful shutdown
 	signal(SIGINT, signal_handler);   // Ctrl+C
 	signal(SIGTERM, signal_handler);  // kill command
-	signal(SIGQUIT, signal_handler);  // Ctrl+\
+	signal(SIGQUIT, signal_handler);  // Ctrl+
 
 	//TODONE: evaluate command line arguments
 

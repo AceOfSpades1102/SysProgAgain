@@ -121,6 +121,20 @@ int handleLRQ(Message *buffer, int client_socket)
         }
     }
 
+    // Check if username is already taken
+    pthread_mutex_lock(&userLock);
+    User* existing_user = searchUser(name);
+    pthread_mutex_unlock(&userLock);
+    
+    if (existing_user != NULL) {
+        debugPrint("Username '%s' is already taken by user on socket %d", name, existing_user->sock);
+        if (sendLRE(client_socket, LRE_NAME_TAKEN, "09Server")) {
+            errorPrint("Failed to send LoginResponse to client %d with code %d", client_socket, LRE_NAME_TAKEN);
+        }
+        close(client_socket);
+        return EXIT_FAILURE;
+    }
+
     // All validation passed - send success response
     debugPrint("Login validation successful for user: %s", name);
     if (sendLRE(client_socket, LRE_SUCCESS, "09Server")) {
