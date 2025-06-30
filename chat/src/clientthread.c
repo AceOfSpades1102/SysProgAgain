@@ -80,10 +80,23 @@ int handleLRQ(Message *buffer, int client_socket)
     }
 
 	// Extract and validate name
-    size_t name_length = buffer->header.length; // Subtract fixed fields
+	// Calculate actual name length: total length minus fixed fields (magic + version)
+	size_t fixed_fields_size = sizeof(uint32_t) + sizeof(uint8_t); // magic + version
+	if (buffer->header.length < fixed_fields_size) {
+		debugPrint("Login request too short to contain required fields");
+		if (sendLRE(client_socket, LRE_UNKNOWN_ERROR, "09Server")) {
+			errorPrint("Failed to send LoginResponse to client %d with code %d", client_socket, LRE_UNKNOWN_ERROR);
+		}
+		close(client_socket);
+		return EXIT_FAILURE;
+	}
+	
+	size_t name_length = buffer->header.length - fixed_fields_size;
+	debugPrint("Calculated name length: %zu (total: %u, fixed fields: %zu)", name_length, buffer->header.length, fixed_fields_size);
+	
     if (name_length > NAME_MAX) 
 	{
-        debugPrint("Name length exceeds maximum allowed size");
+        debugPrint("Name length %zu exceeds maximum allowed size %d", name_length, NAME_MAX);
         if (sendLRE(client_socket, LRE_NAME_INVALD, "09Server")) 
 		{
             errorPrint("Failed to send LoginResponse to client %d with code %d", client_socket, LRE_NAME_INVALD);
