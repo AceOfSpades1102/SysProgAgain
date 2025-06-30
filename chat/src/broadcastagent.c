@@ -128,8 +128,12 @@ int broadcastMessage(const char *sender, const char *text, uint64_t timestamp)
 	//timeout handling
 	struct timespec ts;
 	clock_gettime(CLOCK_REALTIME, &ts);
-	ts.tv_sec += 1; // wait for 1 second
-
+	ts.tv_nsec += 100000000; // 100ms timeout instead of 1 second
+    if (ts.tv_nsec >= 1000000000) {
+        ts.tv_sec += 1;
+        ts.tv_nsec -= 1000000000;
+    }
+	
 	debugPrint("Broadcasting message: trying to send '%s' from '%s' at %lu ( ´∀｀ )b \n", msg.text, msg.sender, msg.timestamp);
 	int result = mq_timedsend(messageQueue, (const char *)&msg, sizeof(msg), 0, &ts);
 

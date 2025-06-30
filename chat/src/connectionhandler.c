@@ -7,11 +7,23 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <netinet/tcp.h>
 #include "user.h"
 #include "clientthread.h"
 #include "util.h"
 #include "def.h"
 #include "connectionhandler.h"
+
+#define MAX_CLIENTS 100
+#define THREAD_POOL_SIZE 20
+
+typedef struct {
+    int client_socket;
+    struct sockaddr_in client_addr;
+} client_work_t;
+
+int active_connections = 0;
+pthread_mutex_t connection_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int createPassiveSocket(in_port_t port)
 {
@@ -24,7 +36,7 @@ static int createPassiveSocket(in_port_t port)
         return -1;
     }
 
-	// Set SO_REUSEADDR to allow immediate reuse of the address
+	// Set SO_REUSEADDR to allow immediate reuse of address
 	int opt = 1;
 	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) 
 	{
@@ -54,6 +66,14 @@ static int createPassiveSocket(in_port_t port)
         return -1;
     }
 
+	// Set TCP_NODELAY to disable Nagle's algorithm
+	int nodelay = 1;
+	setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof(nodelay));
+
+	// Set SO_KEEPALIVE to enable keep-alive messages
+	int keepalive = 1;
+	setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &keepalive, sizeof(keepalive));
+
 	//errno = ENOSYS;
 	return fd;
 }
@@ -74,10 +94,26 @@ int connectionHandler(in_port_t port)
 		struct sockaddr_in client_addr;
         socklen_t client_len = sizeof(client_addr);
 
-		//TODONE: accept() incoming connection
+        pthread_mutex_lock(&connection_count_mutex);
+        if (active_connections >= MAX_CLIENTS) {
+            pthread_mutex_unlock(&connection_count_mutex);
+            debugPrint("Maximum client limit reached, rejecting new connection");
+            
+            int temp_sock = accept(fd, (struct sockaddr *)&client_addr, &client_len);
+            if (temp_sock != -1) {
+                close(temp_sock); // Immediately close if at limit
+            }
+            usleep(10000); // Brief delay before checking again
+            continue;
+        }
+        active_connections++;
+        pthread_mutex_unlock(&connection_count_mutex);
+
 		int *client_sock = malloc(sizeof(int));
         if (!client_sock) {
-            errnoPrint("Failed to allocate memory for client socket");
+            pthread_mutex_lock(&connection_count_mutex);
+            active_connections--;
+            pthread_mutex_unlock(&connection_count_mutex);
             continue;
         }
 
@@ -85,7 +121,9 @@ int connectionHandler(in_port_t port)
 
 		*client_sock = accept(fd, (struct sockaddr *)&client_addr, &client_len);        if (*client_sock == -1)
         {
-            errnoPrint("couldn't accept incoming connection Σ(x_x;)!");
+            pthread_mutex_lock(&connection_count_mutex);
+            active_connections--;
+            pthread_mutex_unlock(&connection_count_mutex);
             free(client_sock);
             continue;
         }
@@ -95,7 +133,7 @@ int connectionHandler(in_port_t port)
 		//TODONE: add connection to user list and start client thread
 		pthread_t tid;
 
-		//TODO: create User in clientthread
+		//TODONE: create User in clientthread
 		if (pthread_create(&tid, NULL, clientthread, client_sock) != 0) {
             errnoPrint("Failed to create client thread");
             close(*client_sock);

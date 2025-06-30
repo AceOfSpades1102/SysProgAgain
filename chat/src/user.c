@@ -13,6 +13,7 @@
 #include "def.h"
 
 static pthread_mutex_t userLock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t userListLock = PTHREAD_RWLOCK_INITIALIZER;
 User *userFront = NULL;
 static User *userBack = NULL;
 
@@ -25,11 +26,11 @@ const char *allocError =("Something went wrong with allocating Memory (・_・)?
 
 int createUser(int sock, pthread_t thread,const char *name)
 {
-    pthread_mutex_lock(&userLock);
+    pthread_rwlock_wrlock(&userListLock);
     User *newUser = (User *)malloc(sizeof(User));
     if (!newUser) {
         debugPrint("%s", allocError);
-        pthread_mutex_unlock(&userLock);
+        pthread_rwlock_unlock(&userListLock);
         return EXIT_FAILURE;
     }
 
@@ -53,7 +54,7 @@ int createUser(int sock, pthread_t thread,const char *name)
 
     debugPrint("userFront is now: %p\n", (void *)userFront);
     
-    pthread_mutex_unlock(&userLock);
+    pthread_rwlock_unlock(&userListLock);
 
     
 
@@ -147,18 +148,15 @@ void userRemoveAll(void)
 
 User* searchUser(const char *name)
 {
-    pthread_mutex_lock(&userLock);
+    pthread_rwlock_rdlock(&userListLock);
     User *current = userFront;
-    //int pos = 0;
-
-   while (current) {
+    while (current) {
         if (strcmp(current->name, name) == 0) {
-            pthread_mutex_unlock(&userLock);
+            pthread_rwlock_unlock(&userListLock);
             return current;
         }
         current = current->next;
     }
-
-    pthread_mutex_unlock(&userLock);
+    pthread_rwlock_unlock(&userListLock);
     return NULL;
 }

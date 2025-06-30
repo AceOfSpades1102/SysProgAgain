@@ -16,6 +16,7 @@
 #include "network.h"
 #include "def.h"
 #include "broadcastagent.h"
+#include "connectionhandler.h"
 
 #include <time.h>
 #include <netinet/in.h>
@@ -242,37 +243,6 @@ int handleAdminCommand(int client_socket, const char* username, const char* comm
 	}
 }
 
-int sendUserAdded(int client_socket, char *username)
-{
-	debugPrint("sending message adding User");
-	Message userAdded;
-	memset (&userAdded, 0, sizeof(Message));
-
-	//set header
-	userAdded.header.type = UAD;  // Login Response type
-	userAdded.header.length = sizeof(uint64_t) + strlen(username);
-
-	// Get current timestamp
-	uint64_t timestamp = (uint64_t)time(NULL);
-	debugPrint("timestamp: %ld", timestamp);
-
-	//set body
-	userAdded.body.user_added.timestamp = htonll(timestamp);
-	strncpy(userAdded.body.user_added.name, username, NAME_MAX - 1);
-	userAdded.body.user_added.name[NAME_MAX - 1] = '\0';
-
-	//broadcast this bitch
-	//broadcastServer2client
-	User *current = userFront;
-    while(current)
-    {
-        //printUser(current);
-		networkSend(current->sock, &userAdded);
-        current = current->next;
-    }
-
-	return 0; //replace with actual return
-}
 
 int sendUserRemoved(int client_socket, char *username, uint8_t code)
 {
@@ -355,49 +325,6 @@ void notify_new_user_callback(User *existing_user, void *context)
     }
 }
 
-void sendUserList(int socket, char *username)
-{
-	debugPrint("UserList");
-
-	forEachUser(notify_new_user_callback, &socket);
-
-    /*User *current = userFront;
-    while(current)
-    {
-		if(strcmp(current->name, username) == 0)
-		{
-			current = current->next;
-		}
-
-		debugPrint("UserList2");
-
-		Message userAdded;
-		memset (&userAdded, 0, sizeof(Message));
-
-		debugPrint("UserList3");
-		//set header
-		userAdded.header.type = UAD;  // Login Response type
-		userAdded.header.length = sizeof(uint64_t) + strlen(username);
-
-		// Get current timestamp
-		uint64_t timestamp = 0;
-
-		//set body
-		userAdded.body.user_added.timestamp = htonll(timestamp);
-		strncpy(userAdded.body.user_added.name, current->name, NAME_MAX - 1);
-		userAdded.body.user_added.name[NAME_MAX - 1] = '\0';
-
-		debugPrint("UserList4");
-
-		networkSend(socket, &userAdded);
-        current = current->next;
-    }*/
-
-
-}
-
-
-
 
 void *clientthread(void *arg)
 {
@@ -443,14 +370,15 @@ void *clientthread(void *arg)
 				
 				debugPrint("User '%s' created and added to user list", username);
 
-				//TODO Add User to List and do that message
+				sendUserAddedMessage(client_socket, username);
 
-				sendUserAdded(client_socket, username);
-				sendUserList(client_socket, username);
+				//TODONE: Notify others about the new user
+				
+				sendFullUserListToClient(client_socket);
 
+				broadcastUserAddedToOthers(username, client_socket);
 				
-				
-				// Keep connection alive and handle further messages
+				// Enter the main message loop
 				debugPrint("Client thread will continue listening for messages...");
 				
 				// Message loop - keep receiving messages from this client
@@ -534,5 +462,44 @@ void *clientthread(void *arg)
 
 	close(client_socket);//maybe different var
 	debugPrint("Client thread stopping.");
+
+    pthread_mutex_lock(&connection_count_mutex);
+    active_connections--;
+    pthread_mutex_unlock(&connection_count_mutex);
+
+    debugPrint("Client thread stopping - connection count: %d", active_connections);
 	return NULL;
+}
+
+void sendFullUserListToClient(int client_socket) {
+    User *current = userFront;
+    while (current) {
+        // Send a "user added" message for each user to the new client
+        sendUserAddedMessage(client_socket, current->name);
+        current = current->next;
+    }
+}
+
+void broadcastUserAddedToOthers(const char *username, int exclude_socket) {
+    User *current = userFront;
+    while (current) {
+        if (current->sock != exclude_socket) {
+            sendUserAddedMessage(current->sock, username);
+        }
+        current = current->next;
+    }
+}
+
+void sendUserAddedMessage(int client_socket, const char *username) {
+    Message msg;
+    memset(&msg, 0, sizeof(Message));
+    msg.header.type = UAD;
+    msg.header.length = sizeof(uint64_t) + strlen(username);
+
+    // Set body
+    msg.body.user_added.timestamp = htonll((uint64_t)time(NULL));
+    strncpy(msg.body.user_added.name, username, NAME_MAX - 1);
+    msg.body.user_added.name[NAME_MAX - 1] = '\0';
+
+    networkSend(client_socket, &msg);
 }
