@@ -351,7 +351,7 @@ void *clientthread(void *arg)
 			{
 				debugPrint("Login successful");
 				
-				// Extract username from login request for user creation
+				//Extract username from login request for user creation
 				char username[NAME_MAX + 1];
 				size_t name_length = buffer.header.length;
 				if (name_length > NAME_MAX) {
@@ -359,24 +359,30 @@ void *clientthread(void *arg)
 				}
 				memcpy(username, buffer.body.login_request.name, name_length);
 				username[name_length] = '\0';
-				
-				// Create user and add to user list
+
 				pthread_t current_thread = pthread_self();
+
+				pthread_mutex_lock(&userLock);
+
+				//Send full user list to new client
+				sendFullUserListToClient(client_socket);
+
+				//Add new user to user list
 				if (createUser(client_socket, current_thread, username) != 0) {
 					errorPrint("Failed to create user for client %d", client_socket);
 					close(client_socket);
 					return NULL;
 				}
-				
-				debugPrint("User '%s' created and added to user list", username);
 
-				sendUserAddedMessage(client_socket, username);
 
 				//TODONE: Notify others about the new user
 				
-				sendFullUserListToClient(client_socket);
-
+				//Broadcast new user to others
 				broadcastUserAddedToOthers(username, client_socket);
+				
+				pthread_mutex_unlock(&userLock);
+				
+				debugPrint("User '%s' created and added to user list", username);
 				
 				// Enter the main message loop
 				debugPrint("Client thread will continue listening for messages...");
