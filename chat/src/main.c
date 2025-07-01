@@ -24,9 +24,9 @@ void signal_handler(int signum) {
 
         exit(EXIT_SUCCESS);
     } else {
-
+        // In client threads, just print and return (or optionally set a thread-local flag)
         infoPrint("Received signal %d in client thread, exiting thread...", signum);
-       
+        // Do not exit the whole process!
     }
 }
 
