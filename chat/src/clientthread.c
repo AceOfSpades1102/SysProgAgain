@@ -288,7 +288,7 @@ int sendUserAdded(char *username)
 	return 0; //replace with actual return
 }
 
-int sendUserRemoved(const char *username, uint8_t code)
+void sendUserRemoved(const char *username, uint8_t code)
 {
 	debugPrint("sending message removing User");
 	Message userRemoved;
@@ -322,7 +322,6 @@ int sendUserRemoved(const char *username, uint8_t code)
 		debugPrint("test viele");
     }
 
-	return 0; //replace with actual return
 }
 
 //building the Useradded Message for Login
