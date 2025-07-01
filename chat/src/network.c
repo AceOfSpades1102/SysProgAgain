@@ -235,15 +235,15 @@ void prepareServer2ClientMessage(Message *msg, const char *original_sender, uint
 {
     // validate original_sender
     size_t sender_len = strlen(original_sender);
-    if (sender_len > NAME_MAX) {
+    if (sender_len > NAME_MAX - 1) {
         errorPrint("prepareServer2ClientMessage: original_sender exceeds NAME_MAX ！Σ(x_x;).");
-        return;
+        sender_len = NAME_MAX - 1;
     }
     // validate text
     size_t text_len = strlen(text);
-    if (text_len > MSG_MAX) {
+    if (text_len > MSG_MAX - 1) {
         errorPrint("prepareServer2ClientMessage: text exceeds MSG_MAX ！Σ(x_x;).");
-        return;
+        text_len = MSG_MAX - 1;
     }
 
     // Prepare the message
@@ -255,11 +255,12 @@ void prepareServer2ClientMessage(Message *msg, const char *original_sender, uint
     // Convert 64-bit timestamp to network byte order
     msg->body.server_to_client.timestamp = htobe64(timestamp); 
 
-    memset(msg->body.server_to_client.originalSender, 0, NAME_MAX + 1); // Clear originalSender
+    memset(msg->body.server_to_client.originalSender, 0, NAME_MAX);
     memcpy(msg->body.server_to_client.originalSender, original_sender, sender_len);
     msg->body.server_to_client.originalSender[sender_len] = '\0'; // Ensure null termination
 
     memcpy(msg->body.server_to_client.text, text, text_len);
+    msg->body.server_to_client.text[text_len] = '\0'; // Ensure null termination
 
     debugPrint("prepareServer2ClientMessage: Prepared message for original_sender='%s', timestamp=%lu, text='%s'", 
                 msg->body.server_to_client.originalSender, (unsigned long)timestamp, msg->body.server_to_client.text);
