@@ -457,7 +457,7 @@ void *clientthread(void *arg)
                 }
 
                 //Broadcast new user to others (excluding itself)
-                broadcastUserAddedToOthers(username, client_socket);
+                broadcastUserAddedToOthers(username);
 
                 pthread_mutex_unlock(&userLock);
 
@@ -569,7 +569,7 @@ void sendFullUserListToClient(int client_socket) {
     }
 }
 
-void broadcastUserAddedToOthers(const char *username, int exclude_socket) {
+void broadcastUserAddedToOthers(const char *username) {
     User *current = userFront;
     while (current) {
         sendUserAddedMessage(current->sock, username);
