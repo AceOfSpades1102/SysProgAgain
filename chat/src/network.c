@@ -2,8 +2,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
-#include <arpa/inet.h> // For htons, htonl, ntohs, ntohl
-#include <endian.h>    // For htobe64, be64toh
+#include <arpa/inet.h>
+#include <endian.h>
 #include <stdlib.h>
 #include <time.h>
 #include "network.h"
@@ -63,9 +63,6 @@ int recieveHeader(int fd, Message *buffer)
     }
     buffer->header.length = ntohs(buffer->header.length);
 
-    //replace that
-    //return checkHeader(buffer, fd);
-    //with this
 
     if(buffer->header.type > TYPE_MAX)
     {
@@ -144,7 +141,7 @@ int networkReceive(int fd, Message *buffer)
     }
 	
 
-	//TODO: Receive text
+	//TODONE: Receive text
     tmp = recieveMessage(fd, buffer);
     if (tmp != RECV_SUCCESS)
     {
@@ -156,7 +153,7 @@ int networkReceive(int fd, Message *buffer)
 
 int networkSend(int fd, const Message *buffer)
 {
-	//TODO: Send complete message
+	//TODONE: Send complete message
 
     debugPrint("networkSend enterd");
     debugPrint("type=%d, length=%u", buffer->header.type, buffer->header.length);
@@ -179,7 +176,7 @@ int networkSend(int fd, const Message *buffer)
 
     debugPrint("NetworkSend3");
 
-    // nachricht in den puffer schreiben
+    //write message in puffer
     send_buffer[0] = buffer->header.type;
     *(uint16_t *)(send_buffer + 1) = htons(buffer->header.length); // Length (network byte order) 
     memcpy(send_buffer + 3, &buffer->body, buffer->header.length); // Body
@@ -245,8 +242,6 @@ int sendServer2Client(int receiver_client, const char *original_sender, uint64_t
 }
 
 
-// Removed duplicate and incorrect definition of broadcast_server2client_callback
-
 void prepareServer2ClientMessage(Message *msg, const char *original_sender, uint64_t timestamp, const char *text)
 {
     // validate original_sender
@@ -262,7 +257,7 @@ void prepareServer2ClientMessage(Message *msg, const char *original_sender, uint
         text_len = MSG_MAX - 1;
     }
 
-    // Prepare the message
+    // Prepare message
     memset(msg, 0, sizeof(Message));
 
     msg->header.type = S2C; // Set message type to ServerToClient
