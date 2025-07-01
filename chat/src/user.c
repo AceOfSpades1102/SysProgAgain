@@ -13,7 +13,6 @@
 #include "def.h"
 
 static pthread_mutex_t userLock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_rwlock_t userListLock = PTHREAD_RWLOCK_INITIALIZER;
 User *userFront = NULL;
 static User *userBack = NULL;
 
@@ -26,22 +25,19 @@ const char *allocError =("Something went wrong with allocating Memory (・_・)?
 
 int createUser(int sock, pthread_t thread,const char *name)
 {
-    pthread_rwlock_wrlock(&userListLock);
+    pthread_mutex_lock(&userLock);
     User *newUser = (User *)malloc(sizeof(User));
     if (!newUser) {
         debugPrint("%s", allocError);
-        pthread_rwlock_unlock(&userListLock);
+        pthread_mutex_unlock(&userLock);
         return EXIT_FAILURE;
     }
-
     strncpy(newUser->name, name, NAME_MAX);
-
     newUser->name[NAME_MAX] = '\0';
     newUser->sock = sock;
     newUser->thread = thread;
     newUser->prev = NULL;
     newUser->next = NULL;
-
 
     if (!userFront) {
         userFront = newUser;
@@ -51,23 +47,14 @@ int createUser(int sock, pthread_t thread,const char *name)
         newUser->prev = userBack;
         userBack = newUser;
     }
-
     debugPrint("userFront is now: %p\n", (void *)userFront);
-    
-    pthread_rwlock_unlock(&userListLock);
-
-    
-
-
-    //printUser(newUser);
+    pthread_mutex_unlock(&userLock);
     return EXIT_SUCCESS;
 }
 
 
 void removeUser(pthread_t thread_id)
 {
-    //assert(User != NULL);
-
     pthread_mutex_lock(&userLock);
 
     User *current = userFront;
@@ -138,6 +125,8 @@ void userRemoveAll(void)
     {
         User *toFree = current;
         current = current->next;
+        //close socket
+        close(toFree->sock);
         free(toFree);
     }
 
@@ -148,15 +137,13 @@ void userRemoveAll(void)
 
 User* searchUser(const char *name)
 {
-    pthread_rwlock_rdlock(&userListLock);
+    // Assumes caller holds userLock!
     User *current = userFront;
     while (current) {
         if (strcmp(current->name, name) == 0) {
-            pthread_rwlock_unlock(&userListLock);
             return current;
         }
         current = current->next;
     }
-    pthread_rwlock_unlock(&userListLock);
     return NULL;
 }
