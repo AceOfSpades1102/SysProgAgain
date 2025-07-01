@@ -578,27 +578,28 @@ void *clientthread(void *arg)
 void sendFullUserListToClient(int client_socket) {
     User *current = userFront;
     while (current) {
-        sendUserAddedMessage(client_socket, current->name);
+        sendUserAddedMessage(client_socket, current->name, 0);
         current = current->next;
     }
 }
 
 void broadcastUserAddedToOthers(const char *username) {
+	uint64_t timestamp = (uint64_t)time(NULL);
     User *current = userFront;
     while (current) {
-        sendUserAddedMessage(current->sock, username);
+        sendUserAddedMessage(current->sock, username, timestamp);
         current = current->next;
     }
 }
 
-void sendUserAddedMessage(int client_socket, const char *username) {
+void sendUserAddedMessage(int client_socket, const char *username, uint64_t timestamp) {
     Message msg;
     memset(&msg, 0, sizeof(Message));
     msg.header.type = UAD;
     msg.header.length = sizeof(uint64_t) + strlen(username);
 
     // Set body
-    msg.body.user_added.timestamp = htonll((uint64_t)time(NULL));
+    msg.body.user_added.timestamp = htonll(timestamp);
     strncpy(msg.body.user_added.name, username, NAME_MAX - 1);
     msg.body.user_added.name[NAME_MAX - 1] = '\0';
 
