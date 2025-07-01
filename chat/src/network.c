@@ -38,11 +38,14 @@ static ssize_t handleRecvReturn(ssize_t tmp, int fd, ssize_t expected_len){
 int recieveHeader(int fd, Message *buffer)
 {
     //recieve type
+    debugPrint("search3");
     debugPrint("Test recieve header entered");
     ssize_t tmp = recv(fd, &(buffer->header.type), sizeof(buffer->header.type), MSG_WAITALL);
     debugPrint("type: %ld", (long)tmp);
     tmp = handleRecvReturn(tmp, fd, sizeof(buffer->header.type));
     debugPrint("type after test: %d", buffer->header.type);
+
+    debugPrint("search4");
 
 
     if(tmp != RECV_SUCCESS)

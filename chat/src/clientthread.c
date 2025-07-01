@@ -560,7 +560,7 @@ void *clientthread(void *arg)
     active_connections--;
     pthread_mutex_unlock(&connection_count_mutex);
 
-	debugPrint("search");
+	debugPrint("search2");
 
     debugPrint("Client thread stopping - connection count: %d", active_connections);
 	return NULL;
