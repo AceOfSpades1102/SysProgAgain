@@ -179,6 +179,12 @@ int networkSend(int fd, const Message *buffer)
 
     ssize_t tmp = send(fd, send_buffer, total_size, 0);
 
+    if(tmp == -1)
+    {
+        errnoPrint("send failed..for some reason");
+        return FAILED;
+    }
+
     if(tmp != (ssize_t)total_size)
     {
         errnoPrint("send() %zu", sizeof(buffer->header) + ntohs(buffer->header.length));
