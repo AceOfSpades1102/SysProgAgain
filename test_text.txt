@@ -1,0 +1,18 @@
+cd build
+rm -R *
+cmake -DCMAKE_BUILD_TYPE=Debug ..
+make
+----------------------------------------------------------
+./server -d
+./client -n $(head -c 31 < /dev/zero | tr '\0' 'a') -p 8888
+ls /dev/mqueue
+-------------------------------------------------------------
+./client -n Peter -p 8888
+./client -n Sarah -p 8888
+./client -n $(head -c 31 < /dev/zero | tr '\0' 'a') -p 8888
+./client -n Admin -p 8888
+
+nc -vv localhost 8888 | od -x
+-----------------------------------------------------------
+for i in $(seq 1 100); do ./client -dn user$i -p 8888 & done
+kill $(jobs -p)
