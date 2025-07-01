@@ -323,6 +323,7 @@ void sendUserRemoved(const char *username, uint8_t code)
         current = current->next;
 		debugPrint("test viele");
     }
+	debugPrint("test viele 2");
 
 }
 
