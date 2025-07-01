@@ -181,6 +181,11 @@ int networkSend(int fd, const Message *buffer)
 
     if(tmp != (ssize_t)total_size)
     {
+        // Check for broken pipe or bad file descriptor
+        if (errno == EPIPE || errno == EBADF) {
+            errnoPrint("send() %d: Broken pipe or bad file descriptor: %s", fd, strerror(errno));
+            return -2; // Signal to remove user, do not exit or cleanup
+        }
         errnoPrint("send() %zu", sizeof(buffer->header) + ntohs(buffer->header.length));
         return FAILED;
     }

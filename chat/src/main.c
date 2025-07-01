@@ -6,25 +6,37 @@
 #include "connectionhandler.h"
 #include "util.h"
 #include "broadcastagent.h"
+#include <sys/types.h>
 
 // Global flag for cleanup
 static volatile int server_running = 1;
+static pid_t main_pid = 0;
 
 // Signal handler for graceful shutdown
 void signal_handler(int signum) {
-    infoPrint("Received signal %d, shutting down server gracefully...", signum);
-    server_running = 0;
-    
-    // Perform cleanup
-    broadcastAgentCleanup();
-    
-    exit(EXIT_SUCCESS);
+    // Only handle signals in the main server process
+    if (getpid() == main_pid) {
+        infoPrint("Received signal %d, shutting down server gracefully...", signum);
+        server_running = 0;
+
+        // Perform cleanup
+        broadcastAgentCleanup();
+
+        exit(EXIT_SUCCESS);
+    } else {
+        // In client threads, just print and return (or optionally set a thread-local flag)
+        infoPrint("Received signal %d in client thread, exiting thread...", signum);
+        // Do not exit the whole process!
+    }
 }
 
 int main(int argc, char **argv)
 {
+    main_pid = getpid();
 	utilInit(argv[0]);
 	infoPrint("Chat server, group 23 :)");	//TODONE: group number is 23
+	
+	sigaction(SIGPIPE, &(struct sigaction){SIG_IGN}, NULL);
 
 	// Register signal handlers for graceful shutdown
 	signal(SIGINT, signal_handler);   // Ctrl+C
