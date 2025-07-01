@@ -14,7 +14,7 @@
 #include "def.h"
 #include "connectionhandler.h"
 
-#define MAX_CLIENTS 100
+#define MAX_CLIENTS 120
 #define THREAD_POOL_SIZE 20
 
 typedef struct {
