@@ -314,6 +314,7 @@ void sendUserRemoved(const char *username, uint8_t code)
 	User *current = userFront;
     while(current)
     {
+		debugPrint("test viele oben");
         //printUser(current);
 		int tmp = networkSend(current->sock, &userRemoved);
 		if(tmp == -1)
