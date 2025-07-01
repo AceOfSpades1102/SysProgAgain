@@ -431,6 +431,7 @@ void *clientthread(void *arg)
             //handle login request
             if (handleLRQ(&buffer, client_socket) == 0)
             {
+				pthread_mutex_lock(&userLock);
                 debugPrint("Login successful");
                 
                 //Extract username from login request for user creation
@@ -444,7 +445,7 @@ void *clientthread(void *arg)
 
                 pthread_t current_thread = pthread_self();
 
-                pthread_mutex_lock(&userLock);
+                
 
                 //Send full user list to new client (excluding itself)
                 sendFullUserListToClient(client_socket);
