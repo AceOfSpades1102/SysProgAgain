@@ -30,6 +30,7 @@ int main(int argc, char **argv)
 	signal(SIGINT, signal_handler);   // Ctrl+C
 	signal(SIGTERM, signal_handler);  // kill command
 	signal(SIGQUIT, signal_handler);  // Ctrl+
+	signal(SIGPIPE, SIG_IGN);
 
 	//TODONE: evaluate command line arguments
 

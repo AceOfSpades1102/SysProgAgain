@@ -216,6 +216,8 @@ int handleAdminCommand(int client_socket, const char* username, const char* comm
 		// Sending user removed message
 		sendUserRemoved(target_name, 1);
 
+		debugPrint("are we exiting user removed?");
+
 		// Close target user's connection ->>cleanup
 		debugPrint("Kicking user %s (socket %d)", target_name, target_user->sock);
 		close(target_user->sock);
@@ -233,7 +235,11 @@ int handleAdminCommand(int client_socket, const char* username, const char* comm
 		}
 		pauseBroadcasting();
 		uint64_t timestamp = (uint64_t)time(NULL);
-		sendServer2Client(client_socket, "Server", timestamp, pauseMsg);
+		User *current = userFront;
+		while (current) {
+			sendServer2Client(current->sock, "Server", timestamp, pauseMsg);
+			current = current->next;
+		}
 		return 0;
 		
 	} else if (strcmp(command, "/resume") == 0) {
@@ -245,7 +251,11 @@ int handleAdminCommand(int client_socket, const char* username, const char* comm
 		}
 		resumeBroadcasting();
 		uint64_t timestamp = (uint64_t)time(NULL);
-		sendServer2Client(client_socket, "Server", timestamp, resumeMsg);
+		User *current = userFront;
+		while (current) {
+			sendServer2Client(current->sock, "Server", timestamp, resumeMsg);
+			current = current->next;
+		}
 		return 0;
 		
 	} else {
@@ -288,7 +298,7 @@ int sendUserAdded(char *username)
 	return 0; //replace with actual return
 }
 
-int sendUserRemoved(const char *username, uint8_t code)
+void sendUserRemoved(const char *username, uint8_t code)
 {
 	debugPrint("sending message removing User");
 	Message userRemoved;
@@ -312,12 +322,19 @@ int sendUserRemoved(const char *username, uint8_t code)
 	User *current = userFront;
     while(current)
     {
+		debugPrint("test viele oben");
         //printUser(current);
-		networkSend(current->sock, &userRemoved);
+		int tmp = networkSend(current->sock, &userRemoved);
+		if(tmp == -1)
+		{
+			debugPrint("Network send failed..for some reason in in sendUser Removed ");
+			return;
+		}
         current = current->next;
+		debugPrint("test viele");
     }
+	debugPrint("test viele 2");
 
-	return 0; //replace with actual return
 }
 
 //building the Useradded Message for Login
@@ -431,6 +448,7 @@ void *clientthread(void *arg)
             //handle login request
             if (handleLRQ(&buffer, client_socket) == 0)
             {
+				
                 debugPrint("Login successful");
                 
                 //Extract username from login request for user creation
@@ -553,9 +571,13 @@ void *clientthread(void *arg)
 	close(client_socket);//maybe different var
 	debugPrint("Client thread stopping.");
 
+	debugPrint("search");
+
     pthread_mutex_lock(&connection_count_mutex);
     active_connections--;
     pthread_mutex_unlock(&connection_count_mutex);
+
+	debugPrint("search2");
 
     debugPrint("Client thread stopping - connection count: %d", active_connections);
 	return NULL;
@@ -564,27 +586,28 @@ void *clientthread(void *arg)
 void sendFullUserListToClient(int client_socket) {
     User *current = userFront;
     while (current) {
-        sendUserAddedMessage(client_socket, current->name);
+        sendUserAddedMessage(client_socket, current->name, 0);
         current = current->next;
     }
 }
 
 void broadcastUserAddedToOthers(const char *username) {
+	uint64_t timestamp = (uint64_t)time(NULL);
     User *current = userFront;
     while (current) {
-        sendUserAddedMessage(current->sock, username);
+        sendUserAddedMessage(current->sock, username, timestamp);
         current = current->next;
     }
 }
 
-void sendUserAddedMessage(int client_socket, const char *username) {
+void sendUserAddedMessage(int client_socket, const char *username, uint64_t timestamp) {
     Message msg;
     memset(&msg, 0, sizeof(Message));
     msg.header.type = UAD;
     msg.header.length = sizeof(uint64_t) + strlen(username);
 
     // Set body
-    msg.body.user_added.timestamp = htonll((uint64_t)time(NULL));
+    msg.body.user_added.timestamp = htonll(timestamp);
     strncpy(msg.body.user_added.name, username, NAME_MAX - 1);
     msg.body.user_added.name[NAME_MAX - 1] = '\0';
 

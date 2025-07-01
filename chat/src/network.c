@@ -38,11 +38,14 @@ static ssize_t handleRecvReturn(ssize_t tmp, int fd, ssize_t expected_len){
 int recieveHeader(int fd, Message *buffer)
 {
     //recieve type
+    debugPrint("search3");
     debugPrint("Test recieve header entered");
     ssize_t tmp = recv(fd, &(buffer->header.type), sizeof(buffer->header.type), MSG_WAITALL);
     debugPrint("type: %ld", (long)tmp);
     tmp = handleRecvReturn(tmp, fd, sizeof(buffer->header.type));
     debugPrint("type after test: %d", buffer->header.type);
+
+    debugPrint("search4");
 
 
     if(tmp != RECV_SUCCESS)
@@ -164,11 +167,17 @@ int networkSend(int fd, const Message *buffer)
         return EXIT_FAILURE;
     }
 
+    debugPrint("NetworkSend");
+
     // Send the complete message
     size_t total_size = buffer->header.length + 3;
 
+    debugPrint("NetworkSend2");
+
     unsigned char send_buffer[total_size];
     memset(send_buffer, 0, total_size); // Clear send buffer
+
+    debugPrint("NetworkSend3");
 
     // nachricht in den puffer schreiben
     send_buffer[0] = buffer->header.type;
@@ -176,8 +185,15 @@ int networkSend(int fd, const Message *buffer)
     memcpy(send_buffer + 3, &buffer->body, buffer->header.length); // Body
 
 
+    fprintf(stderr, "send(): fd=%d, send_buffer=%p, total_size=%zd\n", fd, send_buffer, total_size);
 
     ssize_t tmp = send(fd, send_buffer, total_size, 0);
+
+    if(tmp == -1)
+    {
+        errnoPrint("send failed..for some reason");
+        return FAILED;
+    }
 
     if(tmp != (ssize_t)total_size)
     {
