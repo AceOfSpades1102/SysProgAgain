@@ -46,7 +46,7 @@ int handleLRQ(Message *buffer, int client_socket)
     if (buffer->header.length < 6 || buffer->header.length > 36) 
 	{
         errnoPrint("Invalid message length received (  -_・)? %u", buffer->header.length);
-        if (sendLRE(client_socket, LRE_UNKNOWN_ERROR, "Server23")) 
+        if (sendLRE(client_socket, LRE_UNKNOWN_ERROR, "Server23(/>w<)/")) 
 		{
             errorPrint("Failed to send LoginResponse to client %d with code %d", client_socket, LRE_UNKNOWN_ERROR);
         }
@@ -60,7 +60,7 @@ int handleLRQ(Message *buffer, int client_socket)
     if (received_magic != MAGIC_LRQ) 
 	{
         debugPrint("Invalid magic number in LoginRequest");
-        if (sendLRE(client_socket, LRE_UNKNOWN_ERROR, "Server23")) 
+        if (sendLRE(client_socket, LRE_UNKNOWN_ERROR, "Server23(/>w<)/")) 
 		{
             errorPrint("Failed to send LoginResponse to client %d with code %d", client_socket, LRE_UNKNOWN_ERROR);
         }
@@ -72,7 +72,7 @@ int handleLRQ(Message *buffer, int client_socket)
     if (buffer->body.login_request.version != LRQ_VERSION) 
 	{
         debugPrint("Invalid version in LoginRequest");
-        if (sendLRE(client_socket, LRE_WRONG_VERSION, "Server23")) 
+        if (sendLRE(client_socket, LRE_WRONG_VERSION, "Server23(/>w<)/")) 
 		{
             errorPrint("Failed to send LoginResponse to client %d with code %d", client_socket, LRE_WRONG_VERSION);
         }
@@ -85,7 +85,7 @@ int handleLRQ(Message *buffer, int client_socket)
 	size_t fixed_fields_size = sizeof(uint32_t) + sizeof(uint8_t); // magic + version
 	if (buffer->header.length < fixed_fields_size) {
 		debugPrint("Login request too short to contain required fields");
-		if (sendLRE(client_socket, LRE_UNKNOWN_ERROR, "Server23")) {
+		if (sendLRE(client_socket, LRE_UNKNOWN_ERROR, "Server23(/>w<)/")) {
 			errorPrint("Failed to send LoginResponse to client %d with code %d", client_socket, LRE_UNKNOWN_ERROR);
 		}
 		close(client_socket);
@@ -98,7 +98,7 @@ int handleLRQ(Message *buffer, int client_socket)
     if (name_length > NAME_MAX) 
 	{
         debugPrint("Name length %zu exceeds maximum allowed size %d", name_length, NAME_MAX);
-        if (sendLRE(client_socket, LRE_NAME_INVALD, "Server23")) 
+        if (sendLRE(client_socket, LRE_NAME_INVALD, "Server23(/>w<)/")) 
 		{
             errorPrint("Failed to send LoginResponse to client %d with code %d", client_socket, LRE_NAME_INVALD);
         }
@@ -114,7 +114,7 @@ int handleLRQ(Message *buffer, int client_socket)
     for (size_t i = 0; i < strlen(name); i++) {
         if (name[i] < 33 || name[i] > 126 || name[i] == '\'' || name[i] == '"' || name[i] == '`') {
             debugPrint("Invalid character in name: %s\n", name);
-            if (sendLRE(client_socket, LRE_NAME_INVALD, "Server23")) {
+            if (sendLRE(client_socket, LRE_NAME_INVALD, "Server23(/>w<)/")) {
                 errorPrint("Failed to send LoginResponse to client %d with code %d", client_socket, LRE_NAME_INVALD);
             }
             close(client_socket);
@@ -129,7 +129,7 @@ int handleLRQ(Message *buffer, int client_socket)
     
     if (existing_user != NULL) {
         debugPrint("Username '%s' is already taken by user on socket %d", name, existing_user->sock);
-        if (sendLRE(client_socket, LRE_NAME_TAKEN, "Server23")) {
+        if (sendLRE(client_socket, LRE_NAME_TAKEN, "Server23(/>w<)/")) {
             errorPrint("Failed to send LoginResponse to client %d with code %d", client_socket, LRE_NAME_TAKEN);
         }
         close(client_socket);
@@ -138,7 +138,7 @@ int handleLRQ(Message *buffer, int client_socket)
 
     // All validation passed - send success response
     debugPrint("Login validation successful for user: %s", name);
-    if (sendLRE(client_socket, LRE_SUCCESS, "Server23")) {
+    if (sendLRE(client_socket, LRE_SUCCESS, "Server23(/>w<)/")) {
         errorPrint("Failed to send success LoginResponse to client %d", client_socket);
         close(client_socket);
         return EXIT_FAILURE;
