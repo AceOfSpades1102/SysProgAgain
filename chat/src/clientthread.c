@@ -216,6 +216,8 @@ int handleAdminCommand(int client_socket, const char* username, const char* comm
 		// Sending user removed message
 		sendUserRemoved(target_name, 1);
 
+		debugPrint("are we exiting user removed?");
+
 		// Close target user's connection ->>cleanup
 		debugPrint("Kicking user %s (socket %d)", target_name, target_user->sock);
 		close(target_user->sock);
