@@ -167,11 +167,17 @@ int networkSend(int fd, const Message *buffer)
         return EXIT_FAILURE;
     }
 
+    debugPrint("NetworkSend");
+
     // Send the complete message
     size_t total_size = buffer->header.length + 3;
 
+    debugPrint("NetworkSend2");
+
     unsigned char send_buffer[total_size];
     memset(send_buffer, 0, total_size); // Clear send buffer
+
+    debugPrint("NetworkSend3");
 
     // nachricht in den puffer schreiben
     send_buffer[0] = buffer->header.type;
