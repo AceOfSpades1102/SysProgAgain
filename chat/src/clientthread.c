@@ -16,6 +16,7 @@
 #include "network.h"
 #include "def.h"
 #include "broadcastagent.h"
+#include "connectionhandler.h"
 
 #include <time.h>
 #include <netinet/in.h>
@@ -435,7 +436,7 @@ void *clientthread(void *arg)
 			{
 				debugPrint("Login successful");
 				
-				// Extract username from login request for user creation
+				//Extract username from login request for user creation
 				char username[NAME_MAX + 1];
 				size_t name_length = buffer.header.length;
 				if (name_length > NAME_MAX) {
@@ -443,14 +444,28 @@ void *clientthread(void *arg)
 				}
 				memcpy(username, buffer.body.login_request.name, name_length);
 				username[name_length] = '\0';
-				
-				// Create user and add to user list
+
 				pthread_t current_thread = pthread_self();
+
+				pthread_mutex_lock(&userLock);
+
+				//Send full user list to new client
+				sendFullUserListToClient(client_socket);
+
+				//Add new user to user list
 				if (createUser(client_socket, current_thread, username) != 0) {
 					errorPrint("Failed to create user for client %d", client_socket);
 					close(client_socket);
 					return NULL;
 				}
+
+
+				//TODONE: Notify others about the new user
+				
+				//Broadcast new user to others
+				broadcastUserAddedToOthers(username, client_socket);
+				
+				pthread_mutex_unlock(&userLock);
 				
 				debugPrint("User '%s' created and added to user list", username);
 
@@ -460,8 +475,7 @@ void *clientthread(void *arg)
 				sendUserList(client_socket);
 
 				
-				
-				// Keep connection alive and handle further messages
+				// Enter the main message loop
 				debugPrint("Client thread will continue listening for messages...");
 				
 				// Message loop - keep receiving messages from this client
@@ -549,5 +563,44 @@ void *clientthread(void *arg)
 
 	close(client_socket);//maybe different var
 	debugPrint("Client thread stopping.");
+
+    pthread_mutex_lock(&connection_count_mutex);
+    active_connections--;
+    pthread_mutex_unlock(&connection_count_mutex);
+
+    debugPrint("Client thread stopping - connection count: %d", active_connections);
 	return NULL;
+}
+
+void sendFullUserListToClient(int client_socket) {
+    User *current = userFront;
+    while (current) {
+        // Send a "user added" message for each user to the new client
+        sendUserAddedMessage(client_socket, current->name);
+        current = current->next;
+    }
+}
+
+void broadcastUserAddedToOthers(const char *username, int exclude_socket) {
+    User *current = userFront;
+    while (current) {
+        if (current->sock != exclude_socket) {
+            sendUserAddedMessage(current->sock, username);
+        }
+        current = current->next;
+    }
+}
+
+void sendUserAddedMessage(int client_socket, const char *username) {
+    Message msg;
+    memset(&msg, 0, sizeof(Message));
+    msg.header.type = UAD;
+    msg.header.length = sizeof(uint64_t) + strlen(username);
+
+    // Set body
+    msg.body.user_added.timestamp = htonll((uint64_t)time(NULL));
+    strncpy(msg.body.user_added.name, username, NAME_MAX - 1);
+    msg.body.user_added.name[NAME_MAX - 1] = '\0';
+
+    networkSend(client_socket, &msg);
 }
