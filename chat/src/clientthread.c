@@ -288,7 +288,7 @@ int sendUserAdded(char *username)
 	return 0; //replace with actual return
 }
 
-int sendUserRemoved(char *username, uint8_t code)
+int sendUserRemoved(const char *username, uint8_t code)
 {
 	debugPrint("sending message removing User");
 	Message userRemoved;
