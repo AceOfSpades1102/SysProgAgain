@@ -216,8 +216,6 @@ int handleAdminCommand(int client_socket, const char* username, const char* comm
 		// Sending user removed message
 		sendUserRemoved(target_name, 1);
 
-		debugPrint("are we exiting user removed?");
-
 		// Close target user's connection ->>cleanup
 		debugPrint("Kicking user %s (socket %d)", target_name, target_user->sock);
 		close(target_user->sock);
@@ -266,38 +264,7 @@ int handleAdminCommand(int client_socket, const char* username, const char* comm
 	}
 }
 
-int sendUserAdded(char *username)
-{
-	debugPrint("sending message adding User");
-	Message userAdded;
-	memset (&userAdded, 0, sizeof(Message));
-
-	//set header
-	userAdded.header.type = UAD;  // Login Response type
-	userAdded.header.length = sizeof(uint64_t) + strlen(username);
-
-	// Get current timestamp
-	uint64_t timestamp = (uint64_t)time(NULL);
-	debugPrint("timestamp: %ld", timestamp);
-
-	//set body
-	userAdded.body.user_added.timestamp = htonll(timestamp);
-	strncpy(userAdded.body.user_added.name, username, NAME_MAX - 1);
-	userAdded.body.user_added.name[NAME_MAX - 1] = '\0';
-
-	//broadcast this bitch
-	//broadcastServer2client
-	User *current = userFront;
-    while(current)
-    {
-        //printUser(current);
-		networkSend(current->sock, &userAdded);
-        current = current->next;
-    }
-
-	return 0; //replace with actual return
-}
-
+//for admin kick
 void sendUserRemoved(const char *username, uint8_t code)
 {
 	debugPrint("sending message removing User");
@@ -322,7 +289,6 @@ void sendUserRemoved(const char *username, uint8_t code)
 	User *current = userFront;
     while(current)
     {
-		debugPrint("test viele oben");
         //printUser(current);
 		int tmp = networkSend(current->sock, &userRemoved);
 		if(tmp == -1)
@@ -331,104 +297,9 @@ void sendUserRemoved(const char *username, uint8_t code)
 			return;
 		}
         current = current->next;
-		debugPrint("test viele");
     }
-	debugPrint("test viele 2");
 
 }
-
-//building the Useradded Message for Login
-void buildUserAddMessage(Message *message, const char *username)
-{
-
-	debugPrint("bueilding user added message");
-	size_t name_length = strlen(username);
-    if (name_length < 1 || name_length > MAX_NAME) {
-        errnoPrint("prepareUserAddedMessage: Invalid client_name length: %zu", name_length);
-        return;
-    }
-
-	memset (message, 0, sizeof(Message));
-
-	//set header
-	message->header.type = UAD;  // Login Response type
-	message->header.length = sizeof(uint64_t) + strlen(username);
-
-	//set body
-	message->body.user_added.timestamp = htonll(0);
-	memcpy(message->body.user_added.name, username, strlen(username));
-
-}
-
-void notify_new_user_callback(User *existing_user, void *context)
-{
-	debugPrint("callback");
-    if (!existing_user || !context) {
-        return;
-    }
-
-    // Cast context back to the new user's socket
-    int *new_user_sock = (int *)context;
-
-    if (existing_user->sock == *new_user_sock) {
-        return; // existing user is new user
-    }
-
-    // Prepare
-    Message message;
-    buildUserAddMessage(&message, existing_user->name);
-
-    // Send the message to the new user's socket
-    if (networkSend(*new_user_sock, &message) == -1) {
-        errorPrint("Failed to notify new user about existing user %s (fd=%d).", existing_user->name, *new_user_sock);
-    } else {
-        debugPrint("Notified new user about existing user %s (fd=%d).", existing_user->name, *new_user_sock);
-    }
-}
-
-void sendUserList(int socket)
-{
-	debugPrint("UserList");
-
-	forEachUser(notify_new_user_callback, &socket);
-
-    /*User *current = userFront;
-    while(current)
-    {
-		if(strcmp(current->name, username) == 0)
-		{
-			current = current->next;
-		}
-
-		debugPrint("UserList2");
-
-		Message userAdded;
-		memset (&userAdded, 0, sizeof(Message));
-
-		debugPrint("UserList3");
-		//set header
-		userAdded.header.type = UAD;  // Login Response type
-		userAdded.header.length = sizeof(uint64_t) + strlen(username);
-
-		// Get current timestamp
-		uint64_t timestamp = 0;
-
-		//set body
-		userAdded.body.user_added.timestamp = htonll(timestamp);
-		strncpy(userAdded.body.user_added.name, current->name, NAME_MAX - 1);
-		userAdded.body.user_added.name[NAME_MAX - 1] = '\0';
-
-		debugPrint("UserList4");
-
-		networkSend(socket, &userAdded);
-        current = current->next;
-    }*/
-
-
-}
-
-
-
 
 void *clientthread(void *arg)
 {
@@ -571,13 +442,9 @@ void *clientthread(void *arg)
 	close(client_socket);//maybe different var
 	debugPrint("Client thread stopping.");
 
-	debugPrint("search");
-
     pthread_mutex_lock(&connection_count_mutex);
     active_connections--;
     pthread_mutex_unlock(&connection_count_mutex);
-
-	debugPrint("search2");
 
     debugPrint("Client thread stopping - connection count: %d", active_connections);
 	return NULL;
