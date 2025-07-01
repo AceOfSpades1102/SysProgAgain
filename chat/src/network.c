@@ -191,7 +191,7 @@ int networkSend(int fd, const Message *buffer)
 
     if(tmp == -1)
     {
-        errnoPrint("send failed..for some reason");
+        debugPrint("send failed probably because of a broken pipe");
         return FAILED;
     }
 

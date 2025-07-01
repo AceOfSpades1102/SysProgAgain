@@ -327,7 +327,7 @@ void sendUserRemoved(const char *username, uint8_t code)
 		int tmp = networkSend(current->sock, &userRemoved);
 		if(tmp == -1)
 		{
-			debugPrint("Network send failed..for some reason in in sendUser Removed ");
+			debugPrint("Network send failed probably because of broken pipe");
 			return;
 		}
         current = current->next;
