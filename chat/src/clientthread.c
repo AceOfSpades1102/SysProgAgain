@@ -316,9 +316,10 @@ int sendUserRemoved(const char *username, uint8_t code)
 		int tmp = networkSend(current->sock, &userRemoved);
 		if(tmp == -1)
 		{
-			errnoPrint("Network send failed..for some reason in in sendUser Removed ");
+			debugPrint("Network send failed..for some reason in in sendUser Removed ");
 		}
         current = current->next;
+		debugPrint("test viele");
     }
 
 	return 0; //replace with actual return
