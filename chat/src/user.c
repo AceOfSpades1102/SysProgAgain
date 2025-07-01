@@ -94,36 +94,7 @@ void removeUser(pthread_t thread_id)
     return; //TODO Failure
 }
 
-// Remove user by socket fd (for broken pipe handling)
-void removeUserBySock(int sock)
-{
-    pthread_mutex_lock(&userLock);
 
-    User *current = userFront;
-    while (current) {
-        if (current->sock == sock) {
-            debugPrint("Removing user '%s' from user list", current->name);
-            if (current->prev) {
-                current->prev->next = current->next;
-            } else {
-                userFront = current->next;
-            }
-            if (current->next) {
-                current->next->prev = current->prev;
-            } else {
-                userBack = current->prev;
-            }
-            close(current->sock);
-            free(current);
-            pthread_mutex_unlock(&userLock);
-            return; // Immediately return after removal to avoid use-after-free
-        }
-        current = current->next;
-    }
-    pthread_mutex_unlock(&userLock);
-}
-
-// Safe iteration: allows callback to remove the current user
 void forEachUser(void (*callback)(User *, void *), void *context)
 {
     pthread_mutex_lock(&userLock);
@@ -131,9 +102,9 @@ void forEachUser(void (*callback)(User *, void *), void *context)
     User *current = userFront;
     while(current)
     {
-        User *next = current->next; // Save next before callback
+        //printUser(current);
         callback(current, context);
-        current = next;
+        current = current->next;
     }
 
     pthread_mutex_unlock(&userLock);
