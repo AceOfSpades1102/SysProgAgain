@@ -572,9 +572,7 @@ void sendFullUserListToClient(int client_socket) {
 void broadcastUserAddedToOthers(const char *username, int exclude_socket) {
     User *current = userFront;
     while (current) {
-        if (current->sock != exclude_socket) {
-            sendUserAddedMessage(current->sock, username);
-        }
+        sendUserAddedMessage(current->sock, username);
         current = current->next;
     }
 }
@@ -592,3 +590,4 @@ void sendUserAddedMessage(int client_socket, const char *username) {
 
     networkSend(client_socket, &msg);
 }
+
