@@ -25,8 +25,8 @@
 
 //return and write stuff >v<
 enum { 
-	MSG_MAX = 1024,
-	NAME_MAX = 32,
+	MSG_MAX = 512,
+	NAME_MAX = 16,
 	TEXT_MAX = 512,
 	TYPE_MAX = 5,
 	LRQ_LEN_MIN = 6,

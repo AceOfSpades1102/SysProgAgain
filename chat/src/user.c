@@ -19,7 +19,7 @@ static User *userBack = NULL;
 //errors
 const char *allocError =("Something went wrong with allocating Memory (・_・)?");
 
-//TODO: Implement the functions declared in user.h
+//TODONE: Implement the functions declared in user.h
 
 
 
@@ -83,7 +83,7 @@ void removeUser(pthread_t thread_id)
 
             // Unlock the list mutex and return
             pthread_mutex_unlock(&userLock);
-            return; // TODO : Success
+            return;
         }
         current = current->next;
     }
@@ -91,7 +91,7 @@ void removeUser(pthread_t thread_id)
     //printf("userFront is now: %p\n", (void *)userFront);
 
     pthread_mutex_unlock(&userLock);
-    return; //TODO Failure
+    return;
 }
 
 
@@ -110,7 +110,7 @@ void forEachUser(void (*callback)(User *, void *), void *context)
     pthread_mutex_unlock(&userLock);
 }
 
-// zum testen und debuggen
+// to test and debug
 void printUser(User *user) 
 {
     printf("User socket: %d, Thread ID: %lu name: %s\n", user->sock, user->thread, user->name);

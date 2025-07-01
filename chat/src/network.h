@@ -10,11 +10,6 @@
 #define MAX_MESSAGE 555
 #define TIMESTAMP_LEN 8 // 64 bit timestamp
 
-
-/* TODO: When implementing the fully-featured network protocol (including
- * login), replace this with message structures derived from the network
- * protocol (RFC) as found in the moodle course. */
-
 typedef struct __attribute__((packed)){
 	uint8_t type;
 	uint16_t length;
