@@ -34,8 +34,9 @@ int main(int argc, char **argv)
 
 	//TODONE: evaluate command line arguments
 
-	debugEnable();
-	infoPrint("Debug mode enabled!");
+	//auto debug if necessary
+	//debugEnable();
+	//infoPrint("Debug mode enabled!");
 
 	int c = 0;
 	int port = 8888;
@@ -73,8 +74,8 @@ int main(int argc, char **argv)
 			}
 			case 'd':
 			{
-				debugDisable();
-				infoPrint("Debug mode disabled!");
+				debugEnable();
+				infoPrint("Debug mode enabled!");
 				break;
 			}
 			case 'h':
