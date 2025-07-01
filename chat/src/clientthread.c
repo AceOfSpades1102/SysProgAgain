@@ -237,7 +237,7 @@ int handleAdminCommand(int client_socket, const char* username, const char* comm
 		uint64_t timestamp = (uint64_t)time(NULL);
 		User *current = userFront;
 		while (current) {
-			sendServer2Client(client_socket, "Server", timestamp, pauseMsg);
+			sendServer2Client(current->sock, "Server", timestamp, pauseMsg);
 			current = current->next;
 		}
 		return 0;
@@ -251,7 +251,11 @@ int handleAdminCommand(int client_socket, const char* username, const char* comm
 		}
 		resumeBroadcasting();
 		uint64_t timestamp = (uint64_t)time(NULL);
-		sendServer2Client(client_socket, "Server", timestamp, resumeMsg);
+		User *current = userFront;
+		while (current) {
+			sendServer2Client(current->sock, "Server", timestamp, resumeMsg);
+			current = current->next;
+		}
 		return 0;
 		
 	} else {
