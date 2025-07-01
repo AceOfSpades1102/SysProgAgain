@@ -6,7 +6,6 @@
 
 int connectionHandler(in_port_t port);
 
-// Declare external variables for connection management
 extern int active_connections;
 extern pthread_mutex_t connection_count_mutex;
 void sendFullUserListToClient(int client_socket);
