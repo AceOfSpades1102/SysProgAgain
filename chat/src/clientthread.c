@@ -431,7 +431,7 @@ void *clientthread(void *arg)
             //handle login request
             if (handleLRQ(&buffer, client_socket) == 0)
             {
-				pthread_mutex_lock(&userLock);
+				
                 debugPrint("Login successful");
                 
                 //Extract username from login request for user creation
@@ -445,7 +445,7 @@ void *clientthread(void *arg)
 
                 pthread_t current_thread = pthread_self();
 
-                
+                pthread_mutex_lock(&userLock);
 
                 //Send full user list to new client (excluding itself)
                 sendFullUserListToClient(client_socket);
@@ -554,9 +554,13 @@ void *clientthread(void *arg)
 	close(client_socket);//maybe different var
 	debugPrint("Client thread stopping.");
 
+	debugPrint("search");
+
     pthread_mutex_lock(&connection_count_mutex);
     active_connections--;
     pthread_mutex_unlock(&connection_count_mutex);
+
+	debugPrint("search");
 
     debugPrint("Client thread stopping - connection count: %d", active_connections);
 	return NULL;
