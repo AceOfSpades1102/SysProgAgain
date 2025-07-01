@@ -320,6 +320,7 @@ void sendUserRemoved(const char *username, uint8_t code)
 		if(tmp == -1)
 		{
 			debugPrint("Network send failed..for some reason in in sendUser Removed ");
+			return;
 		}
         current = current->next;
 		debugPrint("test viele");
