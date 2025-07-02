@@ -182,13 +182,13 @@ int networkSend(int fd, const Message *buffer)
     memcpy(send_buffer + 3, &buffer->body, buffer->header.length); // Body
 
 
-    fprintf(stderr, "send(): fd=%d, send_buffer=%p, total_size=%zd\n", fd, send_buffer, total_size);
+    debugPrint("send(): fd=%d, send_buffer=%p, total_size=%zd\n", fd, send_buffer, total_size);
 
     ssize_t tmp = send(fd, send_buffer, total_size, 0);
 
     if(tmp == -1)
     {
-        errnoPrint("send failed..for some reason");
+        debugPrint("send failed probably because broken pipe");
         return FAILED;
     }
 
